@@ -14,13 +14,17 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify(body)
     });
-    const data = await response.json();
+    const text = await response.text();
     return {
       statusCode: 200,
       headers: {'Access-Control-Allow-Origin': '*','Content-Type': 'application/json'},
-      body: JSON.stringify(data)
+      body: text
     };
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return {
+      statusCode: 500,
+      headers: {'Access-Control-Allow-Origin': '*'},
+      body: JSON.stringify({ error: { message: err.message } })
+    };
   }
 };
