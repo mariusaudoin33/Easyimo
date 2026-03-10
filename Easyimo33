@@ -1,0 +1,132 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { prenom, nom, loyer, type_bien, adresse, fichiers_base64 } = await req.json();
+
+    const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_KEY) throw new Error("Clé API manquante");
+
+    // Build message content
+    const content: any[] = [];
+
+    // Add PDF documents if provided
+    if (fichiers_base64 && fichiers_base64.length > 0) {
+      for (const fichier of fichiers_base64) {
+        if (fichier.type === "application/pdf") {
+          content.push({
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: fichier.data,
+            },
+          });
+        } else if (fichier.type.startsWith("image/")) {
+          content.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: fichier.type,
+              data: fichier.data,
+            },
+          });
+        }
+      }
+    }
+
+    // Add the analysis prompt
+    content.push({
+      type: "text",
+      text: `Tu es un expert en analyse de dossiers locataires pour des agences immobilières françaises. Tu dois analyser le dossier de ce candidat locataire.
+
+INFORMATIONS DU BIEN :
+- Candidat : ${prenom} ${nom}
+- Loyer mensuel demandé : ${loyer}€
+- Type de bien : ${type_bien}
+- Adresse : ${adresse || "non précisée"}
+
+${fichiers_base64 && fichiers_base64.length > 0 
+  ? `DOCUMENTS FOURNIS : ${fichiers_base64.length} document(s) joint(s) ci-dessus. Analyse-les attentivement pour extraire les informations financières réelles (salaires, revenus, type de contrat, ancienneté).`
+  : "AUCUN DOCUMENT fourni. Génère une analyse simulée réaliste."}
+
+INSTRUCTIONS IMPORTANTES :
+- Extrait les revenus NETS mensuels réels depuis les documents (pas bruts)
+- Si tu vois une fiche de paie, lis le salaire net à payer indiqué
+- Calcule le taux d'effort = (loyer / revenus nets) × 100
+- Vérifie quelles pièces sont présentes dans les documents fournis
+- Sois précis et factuel
+
+Réponds UNIQUEMENT en JSON valide avec exactement cette structure, sans texte avant ni après :
+{
+  "score": <nombre 0-100>,
+  "revenus_nets": "<ex: 2 150€/mois>",
+  "revenus_nets_nombre": <nombre entier>,
+  "taux_effort": <nombre entier>,
+  "type_contrat": "<CDI / CDD / Fonctionnaire / Indépendant / Retraité>",
+  "anciennete": "<ex: 2 ans 3 mois>",
+  "source_revenus": "<ex: Fiche de paie août 2024 - Salaire net: 2150€>",
+  "pieces": [
+    {"nom": "3 dernières fiches de paie", "statut": "<ok|partial|missing>", "detail": "<ce que tu as vu>"},
+    {"nom": "Contrat de travail", "statut": "<ok|partial|missing>", "detail": ""},
+    {"nom": "Avis d'imposition", "statut": "<ok|partial|missing>", "detail": ""},
+    {"nom": "Pièce d'identité", "statut": "<ok|partial|missing>", "detail": ""},
+    {"nom": "Justificatif de domicile", "statut": "<ok|partial|missing>", "detail": ""},
+    {"nom": "RIB bancaire", "statut": "<ok|partial|missing>", "detail": ""}
+  ],
+  "resume": "<2-3 phrases résumant le profil, basées sur les documents réels>",
+  "verdict": "<FAVORABLE|FAVORABLE_RESERVE|DEFAVORABLE>",
+  "verdict_detail": "<1-2 phrases expliquant la recommandation>",
+  "donnees_lues": <true si documents analysés, false si simulation>
+}`,
+    });
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "pdfs-2024-09-25",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-5",
+        max_tokens: 1500,
+        messages: [{ role: "user", content }],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Erreur API Anthropic");
+    }
+
+    const rawText = data.content.map((b: any) => b.text || "").join("");
+    const clean = rawText.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(clean);
+
+    return new Response(JSON.stringify({ success: true, result }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});
