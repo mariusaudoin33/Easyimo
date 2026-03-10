@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" conten="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lokify — Analyse de dossiers locataires par IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -22,6 +22,8 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;overflow-x:hidden;}
+
+/* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(245,245,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(224,223,248,0.7);}
 .nav-logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--black);text-decoration:none;letter-spacing:-0.02em;}
 .logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);letter-spacing:-0.5px;}
@@ -29,22 +31,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .nav-link{font-size:0.875rem;font-weight:500;color:var(--muted);padding:8px 16px;border-radius:8px;border:none;background:none;cursor:pointer;transition:all 0.2s;}
 .nav-link:hover,.nav-link.active{background:var(--violet-light);color:var(--violet);}
 .nav-cta{background:var(--violet);color:#fff;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;font-weight:600;padding:10px 22px;border-radius:9px;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(79,70,229,0.35);}
+.nav-cta:hover{background:var(--violet-dark);transform:translateY(-1px);}
+
 .page{display:none;min-height:100vh;padding-top:68px;}
 .page.active{display:block;}
+
+/* TOOL PAGE */
 .tool-wrap{max-width:1160px;margin:0 auto;padding:40px 24px 80px;}
 .tool-header{margin-bottom:32px;}
 .tool-header h1{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:6px;}
 .tool-header p{font-size:0.9rem;color:var(--muted);}
+
 .ai-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:700;color:var(--violet-dark);margin-bottom:20px;}
 .ai-dot{width:7px;height:7px;background:var(--violet);border-radius:50%;animation:pulse-dot 2s infinite;}
+
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
 .kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);}
 .kpi-val{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:700;color:var(--black);line-height:1;margin-bottom:4px;}
 .kpi-label{font-size:0.75rem;color:var(--muted);font-weight:500;}
+
 .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow-sm);}
 .card-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--black);margin-bottom:4px;}
 .card-sub{font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+
 .upload-zone{border:2px dashed var(--border);border-radius:11px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
 .upload-zone:hover,.upload-zone.over{border-color:var(--violet);background:var(--violet-light);}
 .upload-icon-wrap{width:44px;height:44px;background:var(--violet-light);border-radius:11px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.3rem;}
@@ -52,29 +62,40 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .upload-hint{font-size:0.75rem;color:var(--muted);}
 .upload-hint span{color:var(--violet);font-weight:600;}
 #fileInput{display:none;}
+
 .file-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
-.file-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;}
+.file-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;animation:fadeUp 0.25s ease;}
 .file-ic{width:28px;height:28px;background:#ede9fe;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;}
 .file-nm{font-size:0.8rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .file-sz{font-size:0.68rem;color:var(--muted);flex-shrink:0;}
-.file-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 5px;border-radius:5px;}
+.file-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 5px;border-radius:5px;transition:all 0.15s;}
+.file-del:hover{background:#fee2e2;color:var(--red);}
+
 .sep{height:1px;background:var(--border);margin:20px 0;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fg{margin-bottom:14px;}
 .fl{display:block;font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:5px;}
 .fi,.fs{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:10px 13px;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;}
 .fi:focus,.fs:focus{border-color:var(--violet);}
+
 .btn-main{width:100%;background:var(--violet);color:#fff;border:none;border-radius:10px;padding:13px 24px;font-family:'Instrument Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;box-shadow:0 2px 8px rgba(79,70,229,0.3);}
-.btn-main:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-main:hover:not(:disabled){background:var(--violet-dark);transform:translateY(-1px);}
+.btn-main:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
 .err{background:var(--red-light);border:1px solid #f5c6c2;border-radius:9px;padding:11px 14px;font-size:0.82rem;color:var(--red);display:none;margin-top:10px;}
 .err.show{display:block;}
+
 #loaderCard{display:none;}
 .loader-inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:52px 24px;text-align:center;}
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin 0.75s linear infinite;}
 .loader-txt{font-size:0.85rem;color:var(--muted);font-weight:500;}
 .loader-step{font-size:0.78rem;color:var(--violet);animation:blink 1.5s ease infinite;}
+
 #resultCard{display:none;}
 #resultCard.show{display:block;}
+
+.source-tag{display:inline-flex;align-items:center;gap:5px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:6px;padding:3px 9px;font-size:0.7rem;font-weight:600;color:var(--violet-dark);margin-top:6px;}
+
 .res-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--border);}
 .res-name{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--black);margin-bottom:4px;}
 .res-prop{font-size:0.78rem;color:var(--muted);}
@@ -83,6 +104,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .score-ring.g{background:var(--green-light);color:var(--green);border:3px solid var(--green);}
 .score-ring.o{background:var(--orange-light);color:var(--orange);border:3px solid var(--orange);}
 .score-ring.r{background:var(--red-light);color:var(--red);border:3px solid var(--red);}
+.score-lbl{font-size:0.68rem;color:var(--muted);font-weight:500;}
+
 .sec-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .met{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;}
@@ -91,10 +114,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .met-val.g{color:var(--green);}
 .met-val.o{color:var(--orange);}
 .met-val.r{color:var(--red);}
+
 .effort-wrap{margin-top:10px;}
 .effort-top{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:5px;}
 .effort-bg{height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
 .effort-fill{height:100%;border-radius:4px;width:0%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
+
 .pieces{display:flex;flex-direction:column;gap:7px;}
 .piece{display:flex;align-items:center;gap:9px;font-size:0.8rem;}
 .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -106,6 +131,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .ptag.ok{background:var(--green-light);color:var(--green);}
 .ptag.partial{background:var(--orange-light);color:var(--orange);}
 .ptag.missing{background:var(--red-light);color:var(--red);}
+
 .summary-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:14px;font-size:0.82rem;line-height:1.75;color:var(--text);}
 .verdict{border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;}
 .verdict.g{background:var(--green-light);border:1px solid #a8d5bc;}
@@ -117,15 +143,31 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .verdict.g .v-txt strong{color:var(--green);}
 .verdict.o .v-txt strong{color:var(--orange);}
 .verdict.r .v-txt strong{color:var(--red);}
+
 .res-actions{display:flex;gap:8px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
 .btn-sec{flex:1;background:var(--bg);color:var(--text);border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .btn-sec:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-light);}
+
 .rs{margin-bottom:18px;}
+
 .empty-state{text-align:center;padding:56px 32px;}
 .empty-state .es-icon{font-size:2.8rem;margin-bottom:14px;}
 .empty-state h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--black);margin-bottom:6px;}
 .empty-state p{font-size:0.82rem;color:var(--muted);line-height:1.7;}
-nt-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 14px;border-radius:20px;}
+
+/* TARIFS */
+#pagePricing{background:linear-gradient(160deg,#f5f5ff 0%,#eef2ff 100%);}
+.pricing-wrap{max-width:1080px;margin:0 auto;padding:72px 24px 100px;}
+.pricing-hero{text-align:center;margin-bottom:64px;}
+.pricing-eyebrow{display:inline-block;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--violet);background:var(--violet-light);border:1px solid var(--violet-mid);padding:5px 14px;border-radius:20px;margin-bottom:20px;}
+.pricing-hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;color:var(--black);letter-spacing:-0.04em;line-height:1.1;margin-bottom:16px;}
+.pricing-hero p{font-size:1rem;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7;}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:56px;}
+.plan{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:32px 28px;box-shadow:var(--shadow-sm);position:relative;transition:transform 0.25s,box-shadow 0.25s;}
+.plan:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
+.plan.featured{background:linear-gradient(160deg,#4f46e5,#3730a3);border-color:transparent;color:#fff;box-shadow:var(--shadow-lg);transform:scale(1.03);}
+.plan.featured:hover{transform:scale(1.03) translateY(-4px);}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 14px;border-radius:20px;}
 .plan-name{font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
 .plan.featured .plan-name{color:rgba(255,255,255,0.65);}
 .plan-price{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:4px;letter-spacing:-0.04em;}
@@ -141,26 +183,35 @@ nt-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 14px;bo
 .plan.featured .feat-check{background:rgba(255,255,255,0.2);color:#fff;}
 .plan-btn{width:100%;padding:13px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
 .plan-btn.outline{background:transparent;color:var(--violet);border:1.5px solid var(--violet);}
+.plan-btn.outline:hover{background:var(--violet-light);}
 .plan-btn.solid{background:var(--white);color:var(--violet-dark);}
+.plan-btn.solid:hover{background:var(--bg);}
 .plan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.plan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
+
 .guarantee{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px 40px;display:flex;align-items:center;gap:24px;box-shadow:var(--shadow-sm);margin-bottom:48px;}
 .guarantee-icon{width:56px;height:56px;background:var(--violet-light);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
 .guarantee h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px;}
 .guarantee p{font-size:0.83rem;color:var(--muted);line-height:1.7;}
+
 .faq-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:24px;text-align:center;}
 .faqs{display:flex;flex-direction:column;gap:8px;max-width:720px;margin:0 auto;}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.faq-q{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;text-align:left;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;color:var(--text);}
+.faq-q{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;text-align:left;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;color:var(--text);transition:background 0.15s;}
+.faq-q:hover{background:var(--bg);}
 .faq-icon{color:var(--violet);font-size:1.2rem;flex-shrink:0;transition:transform 0.25s;}
 .faq-item.open .faq-icon{transform:rotate(45deg);}
 .faq-a{display:none;padding:0 20px 16px;font-size:0.82rem;color:var(--muted);line-height:1.8;}
 .faq-item.open .faq-a{display:block;}
+
 footer{background:var(--black);color:rgba(255,255,255,0.5);text-align:center;padding:28px;font-size:0.75rem;line-height:1.8;}
 footer span{color:rgba(255,255,255,0.8);}
+
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+
 @media(max-width:900px){
   .plans{grid-template-columns:1fr;}
   .plan.featured{transform:none;}
@@ -170,9 +221,15 @@ footer span{color:rgba(255,255,255,0.8);}
   .kpi-row{grid-template-columns:1fr 1fr;}
   .guarantee{flex-direction:column;text-align:center;}
 }
+@media print{
+  nav,.tool-header,.kpi-row,#leftCol,.res-actions{display:none !important;}
+  .tool-grid{grid-template-columns:1fr;}
+  #resultCard{display:block !important;}
+}
 </style>
 </head>
 <body>
+
 <nav>
   <a class="nav-logo" href="#" onclick="showPage('tool');return false;">
     <div class="logo-badge">LK</div>
@@ -184,6 +241,8 @@ footer span{color:rgba(255,255,255,0.8);}
   </div>
   <button class="nav-cta" onclick="showPage('pricing')">Voir les offres</button>
 </nav>
+
+<!-- PAGE OUTIL -->
 <div class="page active" id="pageTool">
   <div class="tool-wrap">
     <div class="tool-header">
@@ -191,17 +250,20 @@ footer span{color:rgba(255,255,255,0.8);}
       <h1>Analyse de dossier locataire</h1>
       <p>Déposez les documents — l'IA lit vraiment les fiches de paie et extrait les données réelles.</p>
     </div>
+
     <div class="kpi-row">
       <div class="kpi"><div class="kpi-val" id="kpiTotal">0</div><div class="kpi-label">Dossiers analysés</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--green)" id="kpiOk">0</div><div class="kpi-label">Favorables</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--orange)" id="kpiRes">0</div><div class="kpi-label">Avec réserves</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpiNok">0</div><div class="kpi-label">Défavorables</div></div>
     </div>
+
     <div class="tool-grid">
       <div id="leftCol">
         <div class="card">
           <div class="card-title">Nouveau dossier</div>
           <div class="card-sub">Ajoutez les pièces justificatives — fiches de paie, contrat, pièce d'identité. L'IA lit les documents et extrait les vraies données.</div>
+
           <div class="upload-zone" id="upZone" onclick="document.getElementById('fileInput').click()">
             <div class="upload-icon-wrap">📎</div>
             <div class="upload-title">Déposer les documents</div>
@@ -209,7 +271,9 @@ footer span{color:rgba(255,255,255,0.8);}
             <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)"/>
           </div>
           <div class="file-list" id="fileList"></div>
+
           <div class="sep"></div>
+
           <div class="form-row">
             <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"/></div>
             <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"/></div>
@@ -227,6 +291,7 @@ footer span{color:rgba(255,255,255,0.8);}
             </div>
           </div>
           <div class="fg"><label class="fl">Adresse du bien</label><input class="fi" id="fAdresse" placeholder="12 rue de la Paix, 75001 Paris"/></div>
+
           <div class="err" id="errBox"></div>
           <button class="btn-main" id="btnAnalyze" onclick="analyze()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -234,6 +299,7 @@ footer span{color:rgba(255,255,255,0.8);}
           </button>
         </div>
       </div>
+
       <div id="rightCol">
         <div class="card" id="loaderCard">
           <div class="loader-inner">
@@ -242,6 +308,7 @@ footer span{color:rgba(255,255,255,0.8);}
             <div class="loader-step" id="loaderStep">Lecture des documents PDF</div>
           </div>
         </div>
+
         <div class="card" id="resultCard">
           <div class="res-head">
             <div>
@@ -254,6 +321,7 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="score-lbl">Score /100</div>
             </div>
           </div>
+
           <div class="rs">
             <div class="sec-title">Indicateurs financiers</div>
             <div class="metrics">
@@ -267,14 +335,17 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="effort-bg"><div class="effort-fill" id="effortFill"></div></div>
             </div>
           </div>
+
           <div class="rs">
             <div class="sec-title">Pièces du dossier</div>
             <div class="pieces" id="piecesList"></div>
           </div>
+
           <div class="rs">
             <div class="sec-title">Résumé du profil</div>
             <div class="summary-box" id="summaryBox"></div>
           </div>
+
           <div class="rs">
             <div class="sec-title">Recommandation</div>
             <div class="verdict" id="verdictBox">
@@ -282,11 +353,13 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="v-txt" id="vTxt"></div>
             </div>
           </div>
+
           <div class="res-actions">
             <button class="btn-sec" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn-sec" onclick="resetForm()">↺ Nouveau dossier</button>
           </div>
         </div>
+
         <div class="card" id="emptyCard">
           <div class="empty-state">
             <div class="es-icon">🏠</div>
@@ -298,7 +371,40 @@ footer span{color:rgba(255,255,255,0.8);}
     </div>
   </div>
 </div>
-    <li><span class="feat-check">✓</span>Historique des dossiers</li>
+
+<!-- PAGE TARIFS -->
+<div class="page" id="pagePricing">
+  <div class="pricing-wrap">
+    <div class="pricing-hero">
+      <div class="pricing-eyebrow">Tarifs transparents</div>
+      <h1>Un abonnement simple,<br>sans surprise</h1>
+      <p>Commencez gratuitement. Passez à Pro quand vous êtes prêt. Résiliez à tout moment.</p>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-name">Découverte</div>
+        <div class="plan-price">Gratuit</div>
+        <div class="plan-period">pour toujours</div>
+        <div class="plan-desc">Idéal pour tester Lokify sur quelques dossiers par mois.</div>
+        <ul class="plan-features">
+          <li><span class="feat-check">✓</span>5 analyses par mois</li>
+          <li><span class="feat-check">✓</span>Lecture réelle des PDFs</li>
+          <li><span class="feat-check">✓</span>Score et taux d'effort</li>
+          <li><span class="feat-check">✓</span>Vérification des pièces</li>
+          <li><span class="feat-check">✓</span>Résumé du profil candidat</li>
+        </ul>
+        <button class="plan-btn ghost" onclick="showPage('tool')">Commencer gratuitement</button>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge">⭐ Le plus populaire</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">49€</div>
+        <div class="plan-period">par mois · sans engagement</div>
+        <div class="plan-desc">Pour les agences actives qui traitent des dossiers régulièrement.</div>
+        <ul class="plan-features">
+          <li><span class="feat-check">✓</span><strong>Analyses illimitées</strong></li>
+          <li><span class="feat-check">✓</span>Rapport PDF exportable</li>
+          <li><span class="feat-check">✓</span>Historique des dossiers</li>
           <li><span class="feat-check">✓</span>Comparaison de candidats</li>
           <li><span class="feat-check">✓</span>Alerte dossiers incomplets</li>
           <li><span class="feat-check">✓</span>Support prioritaire</li>
@@ -325,26 +431,30 @@ footer span{color:rgba(255,255,255,0.8);}
       <div class="guarantee-icon">🛡️</div>
       <div>
         <h3>14 jours satisfait ou remboursé</h3>
-        <p>Testez Lokify Pro sans risque. Si vous n'êtes pas convaincus, nous vous remboursons intégralement.</p>
+        <p>Testez Lokify Pro sans risque. Si vous n'êtes pas convaincus, nous vous remboursons intégralement, sans question.</p>
       </div>
     </div>
     <div class="faq-title">Questions fréquentes</div>
     <div class="faqs">
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)"><span>Comment fonctionne la lecture des PDFs ?</span><span class="faq-icon">+</span></button>
-        <div class="faq-a">Lokify utilise Claude (Anthropic) pour lire et analyser les documents. L'IA extrait automatiquement le salaire net, le type de contrat et l'ancienneté.</div>
+        <div class="faq-a">Lokify utilise Claude (Anthropic) pour lire et analyser les documents fournis. L'IA extrait automatiquement le salaire net, le type de contrat, l'ancienneté depuis les fiches de paie réelles.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)"><span>Les données sont-elles sécurisées ?</span><span class="faq-icon">+</span></button>
-        <div class="faq-a">Absolument. Toutes les données sont chiffrées en transit (HTTPS). Nous respectons le RGPD.</div>
+        <button class="faq-q" onclick="toggleFaq(this)"><span>Les données de mes candidats sont-elles sécurisées ?</span><span class="faq-icon">+</span></button>
+        <div class="faq-a">Absolument. Toutes les données sont chiffrées en transit (HTTPS). Nous respectons le RGPD et ne conservons jamais les documents originaux après l'analyse.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)"><span>Lokify remplace-t-il mon jugement ?</span><span class="faq-icon">+</span></button>
+        <div class="faq-a">Non. Lokify est un outil d'aide à la décision. La décision finale vous appartient toujours. Notre IA vous fait gagner du temps en traitant les données chiffrées.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)"><span>Puis-je résilier à tout moment ?</span><span class="faq-icon">+</span></button>
-        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client en un clic.</div>
+        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client en un clic. Votre accès reste actif jusqu'à la fin de la période payée.</div>
       </div>
     </div>
   </div>
-  <footer><span>Lokify</span> — Analyse de dossiers locataires par IA<br>© 2025 Lokify · Tous droits réservés</footer>
+  <footer><span>Lokify</span> — Analyse de dossiers locataires par intelligence artificielle<br>© 2025 Lokify · Tous droits réservés · RGPD · Mentions légales</footer>
 </div>
 
 <script>
@@ -390,7 +500,7 @@ function fileToBase64(file){
   });
 }
 
-const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces…','Calcul du taux d\'effort…','Génération du rapport…'];
+const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
 let kTotal=0,kOk=0,kRes=0,kNok=0;
 
 async function analyze(){
@@ -401,22 +511,27 @@ async function analyze(){
   const adresse=document.getElementById('fAdresse').value.trim();
   const errBox=document.getElementById('errBox');
   errBox.classList.remove('show');
+
   if(!prenom||!nom){showErr('Veuillez renseigner le prénom et le nom.');return;}
   if(!loyer||loyer<=0){showErr('Veuillez renseigner le montant du loyer.');return;}
+
   document.getElementById('emptyCard').style.display='none';
   document.getElementById('resultCard').classList.remove('show');
   document.getElementById('loaderCard').style.display='block';
   document.getElementById('btnAnalyze').disabled=true;
+
   let si=0;
   const sl=document.getElementById('loaderStep');
   sl.textContent=loadSteps[0];
   const iv=setInterval(()=>{if(si<loadSteps.length-1)sl.textContent=loadSteps[++si];},800);
+
   try {
     const fichiers_base64=[];
     for(const f of files){
       const data=await fileToBase64(f);
       fichiers_base64.push({type:f.type||'application/pdf',data,name:f.name});
     }
+
     const msgContent=[];
     for(const f of fichiers_base64){
       if(f.type==='application/pdf'){
@@ -425,19 +540,34 @@ async function analyze(){
         msgContent.push({type:'image',source:{type:'base64',media_type:f.type,data:f.data}});
       }
     }
-    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer: ${loyer}€/mois. Bien: ${type} à ${adresse}. Lis les documents et réponds UNIQUEMENT en JSON: {"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"Apprenti","anciennete":"3 ans","pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Avis imposition","statut":"missing"},{"nom":"Piece identite","statut":"ok"},{"nom":"Justificatif domicile","statut":"missing"},{"nom":"RIB","statut":"missing"}],"resume":"Résumé.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
-    const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-beta':'pdfs-2024-09-25'},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
+    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.
+
+Lis attentivement les documents fournis et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"Apprenti","anciennete":"3 ans","pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Avis d imposition","statut":"missing"},{"nom":"Piece identite","statut":"ok"},{"nom":"Justificatif domicile","statut":"missing"},{"nom":"RIB","statut":"missing"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+
+    const resp = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        messages: [{role: 'user', content: msgContent}]
+      })
+    });
+
     clearInterval(iv);
-    const apiResp=await resp.json();
-    if(apiResp.error) throw new Error('API: '+apiResp.error.message);
-    if(!apiResp.content||!apiResp.content[0]) throw new Error('Pas de réponse');
-    const rawText=apiResp.content[0].text;
-    const jsonMatch=rawText.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('Format invalide');
-    const result=JSON.parse(jsonMatch[0]);
+    const apiResp = await resp.json();
+    if(apiResp.error) throw new Error('API: ' + apiResp.error.message);
+    if(!apiResp.content || !apiResp.content[0]) throw new Error('Pas de réponse: ' + JSON.stringify(apiResp).substring(0,100));
+    const rawText = apiResp.content[0].text;
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('Format invalide: ' + rawText.substring(0,100));
+    const result = JSON.parse(jsonMatch[0]);
+
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('btnAnalyze').disabled=false;
     showResult(result,prenom,nom,loyer,type,adresse);
+
     kTotal++;
     if(result.verdict==='FAVORABLE') kOk++;
     else if(result.verdict==='FAVORABLE_RESERVE') kRes++;
@@ -446,6 +576,7 @@ async function analyze(){
     document.getElementById('kpiOk').textContent=kOk;
     document.getElementById('kpiRes').textContent=kRes;
     document.getElementById('kpiNok').textContent=kNok;
+
   } catch(e){
     clearInterval(iv);
     document.getElementById('loaderCard').style.display='none';
@@ -458,11 +589,18 @@ async function analyze(){
 function showResult(r,prenom,nom,loyer,type,adresse){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
+
   const srcTag=document.getElementById('sourceTag');
-  srcTag.innerHTML=r.donnees_lues?'<div class="source-tag">✓ Données lues depuis les documents</div>':'<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation</div>';
+  if(r.donnees_lues){
+    srcTag.innerHTML=`<div class="source-tag">✓ Données lues depuis les documents</div>`;
+  } else {
+    srcTag.innerHTML=`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
+  }
+
   const ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
+
   const e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
   document.getElementById('mRevenu').textContent=r.revenus_nets;
   document.getElementById('mRevenu').className='met-val '+ecls;
@@ -471,16 +609,26 @@ function showResult(r,prenom,nom,loyer,type,adresse){
   document.getElementById('mContrat').textContent=r.type_contrat;
   document.getElementById('mContrat').className='met-val '+(r.type_contrat==='CDI'||r.type_contrat==='Fonctionnaire'?'g':r.type_contrat==='CDD'?'o':'');
   document.getElementById('mAnc').textContent=r.anciennete;
+
   const fill=document.getElementById('effortFill');
   setTimeout(()=>{fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
+
   const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`<div class="piece"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
+  document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
+    <div class="piece">
+      <div class="pdot ${p.statut}"></div>
+      <div class="pname">${p.nom}</div>
+      <div class="ptag ${p.statut}">${tags[p.statut]}</div>
+    </div>`).join('');
+
   document.getElementById('summaryBox').innerHTML=r.resume;
+
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
   document.getElementById('vIcon').textContent=v.icon;
   document.getElementById('vTxt').innerHTML=`<strong>${v.lbl}</strong>${r.verdict_detail}`;
+
   document.getElementById('resultCard').classList.add('show');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
