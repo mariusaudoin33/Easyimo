@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" conten="width=device-width, initial-scale=1.0"/>
 <title>Lokify — Analyse de dossiers locataires par IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -349,7 +349,7 @@ footer span{color:rgba(255,255,255,0.8);}
 
 <script>
 const ANTHROPIC_KEY = 'sk-ant-api03-G80ubq8orP4d3koekWJym0sTqGB4p_mk_hZqXKLdy8XFzQzQn4FxZ-Q1n0bPg8Q9JM9rfjbDmG1AXCIy-6Z7bw-cnWVBgAA';
-const PROXY_URL = 'https://corsproxy.io/?url=https://api.anthropic.com/v1/messages';
+const PROXY_URL = '/.netlify/functions/analyze';
 
 function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
