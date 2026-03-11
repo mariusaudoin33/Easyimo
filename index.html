@@ -1,19 +1,305 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lokify — Analyse de dossiers locataires par IA</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<html lang="fr" style="background-color: transparent;"><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function() {
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        let requestId = 0;
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = requestId++;
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream
+                resolve(new Response(stream, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
+              },
+              reject,
+              channelId
+            });
+            
+            window.parent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          if (event.data.type === 'takeScreenshot') {
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              window.parent.postMessage({
+                type: 'screenshotError',
+                error: new Error('Root element not found'),
+              }, '*');
+            }
+            const screenshot = await htmlToImage.toPng(rootElement, {
+              imagePlaceholder:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+            });
+            window.parent.postMessage({
+              type: 'screenshotData',
+              data: screenshot,
+            }, '*');
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              window.parent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            window.parent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            window.parent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          window.parent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
 <style>
-:root {
-  --bg:#f5f5ff; --white:#ffffff; --black:#0c0b1e; --text:#1e1b4b;
-  --muted:#6b7280; --border:#e0dff8;
-  --violet:#4f46e5; --violet-dark:#3730a3; --violet-light:#eef2ff; --violet-mid:#c7d2fe;
-  --indigo:#6366f1; --indigo-light:#e0e7ff;
-  --green:#2e7d52; --green-light:#e8f5ee;
-  --orange:#c17d11; --orange-light:#fef3dc;
-  --red:#c0392b; --red-light:#fdecea;
+#copyCodeBtn{position:fixed;bottom:24px;right:24px;z-index:9999;background:#0c0b1e;color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:all 0.2s;}
+#copyCodeBtn:hover{background:#4f46e5;transform:translateY(-2px);}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lokify — Analyse de dossiers locataires par IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&amp;family=Instrument+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f5ff;--white:#fff;--black:#0c0b1e;--text:#1e1b4b;--muted:#6b7280;--border:#e0dff8;
+  --violet:#4f46e5;--violet-dark:#3730a3;--violet-light:#eef2ff;--violet-mid:#c7d2fe;
+  --green:#2e7d52;--green-light:#e8f5ee;--orange:#c17d11;--orange-light:#fef3dc;
+  --red:#c0392b;--red-light:#fdecea;
   --shadow-sm:0 1px 3px rgba(79,70,229,0.06),0 2px 8px rgba(79,70,229,0.06);
   --shadow:0 2px 8px rgba(79,70,229,0.08),0 8px 24px rgba(79,70,229,0.08);
   --shadow-lg:0 16px 48px rgba(79,70,229,0.18);
@@ -26,22 +312,30 @@ body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-s
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(245,245,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(224,223,248,0.7);}
 .nav-logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--black);text-decoration:none;letter-spacing:-0.02em;}
-.logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);letter-spacing:-0.5px;}
+.logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);}
 .nav-links{display:flex;gap:8px;}
 .nav-link{font-size:0.875rem;font-weight:500;color:var(--muted);padding:8px 16px;border-radius:8px;border:none;background:none;cursor:pointer;transition:all 0.2s;}
 .nav-link:hover,.nav-link.active{background:var(--violet-light);color:var(--violet);}
+.nav-right{display:flex;align-items:center;gap:10px;}
 .nav-cta{background:var(--violet);color:#fff;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;font-weight:600;padding:10px 22px;border-radius:9px;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(79,70,229,0.35);}
 .nav-cta:hover{background:var(--violet-dark);transform:translateY(-1px);}
+.credits-badge{display:flex;align-items:center;gap:6px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;color:var(--violet-dark);cursor:pointer;transition:all 0.2s;}
+.credits-badge.low{background:#fff8e1;border-color:#ffe082;color:#b45309;}
+.credits-badge.empty{background:var(--red-light);border-color:#f5c6c2;color:var(--red);}
+.credits-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);}
+.credits-badge.low .credits-dot{background:#b45309;}
+.credits-badge.empty .credits-dot{background:var(--red);}
+
+
 
 .page{display:none;min-height:100vh;padding-top:68px;}
 .page.active{display:block;}
 
-/* TOOL PAGE */
+/* TOOL */
 .tool-wrap{max-width:1160px;margin:0 auto;padding:40px 24px 80px;}
 .tool-header{margin-bottom:32px;}
 .tool-header h1{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:6px;}
 .tool-header p{font-size:0.9rem;color:var(--muted);}
-
 .ai-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:700;color:var(--violet-dark);margin-bottom:20px;}
 .ai-dot{width:7px;height:7px;background:var(--violet);border-radius:50%;animation:pulse-dot 2s infinite;}
 
@@ -55,47 +349,88 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .card-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--black);margin-bottom:4px;}
 .card-sub{font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
 
-.upload-zone{border:2px dashed var(--border);border-radius:11px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
+/* TRIAL BANNER */
+.trial-banner{background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:11px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.trial-left{display:flex;align-items:center;gap:10px;}
+.trial-icon{font-size:1.2rem;}
+.trial-text{font-size:0.8rem;color:var(--violet-dark);}
+.trial-text strong{display:block;font-weight:700;font-size:0.85rem;}
+.trial-dots{display:flex;gap:4px;}
+.trial-dot{width:10px;height:10px;border-radius:50%;background:var(--violet-mid);}
+.trial-dot.used{background:var(--violet);}
+
+/* PIECES */
+.pieces-section{margin-bottom:20px;}
+.pieces-section-title{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.pieces-count-badge{background:var(--violet);color:#fff;border-radius:10px;padding:2px 8px;font-size:0.68rem;font-weight:700;}
+.pieces-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.piece-toggle{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;background:var(--white);user-select:none;}
+.piece-toggle:hover{border-color:var(--violet-mid);}
+.piece-toggle.checked{border-color:var(--violet);background:var(--violet-light);}
+.pt-box{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:0.55rem;}
+.piece-toggle.checked .pt-box{background:var(--violet);border-color:var(--violet);color:#fff;}
+.pt-icon{font-size:0.85rem;}
+.pt-label{font-size:0.68rem;font-weight:500;color:var(--text);line-height:1.2;}
+.piece-toggle.checked .pt-label{color:var(--violet-dark);font-weight:600;}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:11px;padding:24px 20px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
 .upload-zone:hover,.upload-zone.over{border-color:var(--violet);background:var(--violet-light);}
-.upload-icon-wrap{width:44px;height:44px;background:var(--violet-light);border-radius:11px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.3rem;}
-.upload-title{font-weight:600;font-size:0.9rem;margin-bottom:4px;}
-.upload-hint{font-size:0.75rem;color:var(--muted);}
+.upload-icon-wrap{width:40px;height:40px;background:var(--violet-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.2rem;}
+.upload-title{font-weight:600;font-size:0.85rem;margin-bottom:3px;}
+.upload-hint{font-size:0.72rem;color:var(--muted);}
 .upload-hint span{color:var(--violet);font-weight:600;}
 #fileInput{display:none;}
-
-.file-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
-.file-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;animation:fadeUp 0.25s ease;}
-.file-ic{width:28px;height:28px;background:#ede9fe;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;}
-.file-nm{font-size:0.8rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.file-sz{font-size:0.68rem;color:var(--muted);flex-shrink:0;}
-.file-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 5px;border-radius:5px;transition:all 0.15s;}
+.file-list{margin-top:10px;display:flex;flex-direction:column;gap:5px;}
+.file-item{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 11px;animation:fadeUp 0.25s ease;}
+.file-ic{width:26px;height:26px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;}
+.file-nm{font-size:0.75rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-sz{font-size:0.65rem;color:var(--muted);flex-shrink:0;}
+.file-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 4px;border-radius:4px;transition:all 0.15s;}
 .file-del:hover{background:#fee2e2;color:var(--red);}
 
-.sep{height:1px;background:var(--border);margin:20px 0;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.fg{margin-bottom:14px;}
-.fl{display:block;font-size:0.75rem;font-weight:600;color:var(--text);margin-bottom:5px;}
-.fi,.fs{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:10px 13px;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;}
+.sep{height:1px;background:var(--border);margin:18px 0;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:4px;}
+.fi,.fs{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;}
 .fi:focus,.fs:focus{border-color:var(--violet);}
+
+/* GARANT */
+.garant-toggle{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:12px;}
+.garant-toggle:hover{border-color:var(--violet-mid);}
+.garant-toggle.open{border-color:var(--violet);background:var(--violet-light);}
+.gt-icon{font-size:1rem;}
+.gt-text{flex:1;}
+.gt-text strong{display:block;font-size:0.82rem;font-weight:600;color:var(--black);}
+.gt-text span{font-size:0.7rem;color:var(--muted);}
+.gt-arrow{color:var(--muted);transition:transform 0.25s;font-size:0.8rem;}
+.garant-toggle.open .gt-arrow{transform:rotate(180deg);}
+.garant-form{display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.garant-form.show{display:block;animation:fadeUp 0.2s ease;}
+.garant-section-title{font-size:0.68rem;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
+.garant-upload{border:1.5px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:0.72rem;color:var(--muted);transition:all 0.2s;margin-top:8px;}
+.garant-upload:hover{border-color:var(--violet);color:var(--violet);}
+.garant-files{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+#garantFileInput{display:none;}
 
 .btn-main{width:100%;background:var(--violet);color:#fff;border:none;border-radius:10px;padding:13px 24px;font-family:'Instrument Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;box-shadow:0 2px 8px rgba(79,70,229,0.3);}
 .btn-main:hover:not(:disabled){background:var(--violet-dark);transform:translateY(-1px);}
 .btn-main:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-
 .err{background:var(--red-light);border:1px solid #f5c6c2;border-radius:9px;padding:11px 14px;font-size:0.82rem;color:var(--red);display:none;margin-top:10px;}
 .err.show{display:block;}
 
+/* LOADER */
 #loaderCard{display:none;}
 .loader-inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:52px 24px;text-align:center;}
 .spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin 0.75s linear infinite;}
 .loader-txt{font-size:0.85rem;color:var(--muted);font-weight:500;}
 .loader-step{font-size:0.78rem;color:var(--violet);animation:blink 1.5s ease infinite;}
 
+/* RESULT */
 #resultCard{display:none;}
 #resultCard.show{display:block;}
-
 .source-tag{display:inline-flex;align-items:center;gap:5px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:6px;padding:3px 9px;font-size:0.7rem;font-weight:600;color:var(--violet-dark);margin-top:6px;}
-
 .res-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--border);}
 .res-name{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--black);margin-bottom:4px;}
 .res-prop{font-size:0.78rem;color:var(--muted);}
@@ -105,7 +440,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .score-ring.o{background:var(--orange-light);color:var(--orange);border:3px solid var(--orange);}
 .score-ring.r{background:var(--red-light);color:var(--red);border:3px solid var(--red);}
 .score-lbl{font-size:0.68rem;color:var(--muted);font-weight:500;}
-
 .sec-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .met{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;}
@@ -114,14 +448,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .met-val.g{color:var(--green);}
 .met-val.o{color:var(--orange);}
 .met-val.r{color:var(--red);}
-
 .effort-wrap{margin-top:10px;}
 .effort-top{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:5px;}
 .effort-bg{height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
 .effort-fill{height:100%;border-radius:4px;width:0%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
-
-.pieces{display:flex;flex-direction:column;gap:7px;}
-.piece{display:flex;align-items:center;gap:9px;font-size:0.8rem;}
+.pieces-list{display:flex;flex-direction:column;gap:7px;}
+.piece-row{display:flex;align-items:center;gap:9px;font-size:0.8rem;}
 .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .pdot.ok{background:var(--green);}
 .pdot.partial{background:var(--orange);}
@@ -131,7 +463,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .ptag.ok{background:var(--green-light);color:var(--green);}
 .ptag.partial{background:var(--orange-light);color:var(--orange);}
 .ptag.missing{background:var(--red-light);color:var(--red);}
-
 .summary-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:14px;font-size:0.82rem;line-height:1.75;color:var(--text);}
 .verdict{border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;}
 .verdict.g{background:var(--green-light);border:1px solid #a8d5bc;}
@@ -143,26 +474,85 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .verdict.g .v-txt strong{color:var(--green);}
 .verdict.o .v-txt strong{color:var(--orange);}
 .verdict.r .v-txt strong{color:var(--red);}
-
 .res-actions{display:flex;gap:8px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
-.btn-sec{flex:1;background:var(--bg);color:var(--text);border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-sec{flex:1;background:var(--bg);color:var(--text);border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .btn-sec:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-light);}
-
+.btn-pdf{flex:1;background:var(--violet);color:#fff;border:none;border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-pdf:hover{background:var(--violet-dark);transform:translateY(-1px);}
 .rs{margin-bottom:18px;}
-
 .empty-state{text-align:center;padding:56px 32px;}
 .empty-state .es-icon{font-size:2.8rem;margin-bottom:14px;}
 .empty-state h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--black);margin-bottom:6px;}
 .empty-state p{font-size:0.82rem;color:var(--muted);line-height:1.7;}
 
-/* TARIFS */
+/* TRUST BADGES */
+.trust-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.trust-badge{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 12px;flex:1;min-width:140px;}
+.trust-icon{font-size:1rem;flex-shrink:0;}
+.trust-text strong{display:block;font-size:0.7rem;font-weight:700;color:var(--black);}
+.trust-text span{font-size:0.62rem;color:var(--muted);}
+.anthropic-badge{background:#fffbeb;border-color:#fde68a;}
+.anthropic-badge .trust-text strong{color:#92400e;}
+
+/* SHARE MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(12,11,30,0.72);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:24px;max-width:900px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+.modal-top{background:linear-gradient(135deg,#4f46e5,#3730a3);padding:40px 40px 32px;border-radius:24px 24px 0 0;text-align:center;position:relative;}
+.modal-top-icon{font-size:2.5rem;margin-bottom:12px;}
+.modal-top h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:8px;}
+.modal-top p{font-size:0.9rem;color:rgba(255,255,255,0.75);max-width:480px;margin:0 auto;line-height:1.6;}
+.modal-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.modal-close:hover{background:rgba(255,255,255,0.25);}
+.modal-body{padding:32px 40px 40px;}
+.modal-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
+.mplan{border:1.5px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;transition:all 0.25s;}
+.mplan:hover{border-color:var(--violet);transform:translateY(-3px);box-shadow:var(--shadow);}
+.mplan.featured{background:linear-gradient(160deg,#4f46e5,#3730a3);border-color:transparent;color:#fff;}
+.mplan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;}
+.mplan-name{font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.mplan.featured .mplan-name{color:rgba(255,255,255,0.6);}
+.mplan-price{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:2px;}
+.mplan.featured .mplan-price{color:#fff;}
+.mplan-period{font-size:0.72rem;color:var(--muted);margin-bottom:14px;}
+.mplan.featured .mplan-period{color:rgba(255,255,255,0.55);}
+.mplan-features{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.mplan-features li{display:flex;align-items:flex-start;gap:7px;font-size:0.78rem;color:var(--text);line-height:1.4;}
+.mplan.featured .mplan-features li{color:rgba(255,255,255,0.85);}
+.mcheck{color:var(--green);font-size:0.75rem;flex-shrink:0;margin-top:1px;}
+.mplan.featured .mcheck{color:#86efac;}
+.mplan-btn{width:100%;padding:11px;border-radius:9px;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
+.mplan-btn.outline{background:transparent;color:var(--violet);border:1.5px solid var(--violet);}
+.mplan-btn.outline:hover{background:var(--violet-light);}
+.mplan-btn.solid{background:#fff;color:var(--violet-dark);}
+.mplan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.mplan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
+.modal-footer{text-align:center;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
+
+/* SHARE POPUP */
+.share-popup-wrap{position:fixed;bottom:32px;right:32px;z-index:300;display:none;animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.share-popup-wrap.show{display:block;}
+.share-popup{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow-lg);max-width:320px;position:relative;}
+.share-popup-close{position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;}
+.share-popup h4{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:var(--black);margin-bottom:4px;}
+.share-popup p{font-size:0.75rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.share-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.share-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-family:'Instrument Sans',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+.share-btn.email{background:var(--violet-light);color:var(--violet);}
+.share-btn.email:hover{background:var(--violet);color:#fff;}
+.share-btn.copy{background:var(--bg);color:var(--text);border:1.5px solid var(--border);}
+.share-btn.copy:hover{border-color:var(--violet);color:var(--violet);}
+.share-btn.wa{background:#e8f5ee;color:var(--green);}
+.share-btn.wa:hover{background:var(--green);color:#fff;}
+
+/* PRICING */
 #pagePricing{background:linear-gradient(160deg,#f5f5ff 0%,#eef2ff 100%);}
 .pricing-wrap{max-width:1080px;margin:0 auto;padding:72px 24px 100px;}
 .pricing-hero{text-align:center;margin-bottom:64px;}
 .pricing-eyebrow{display:inline-block;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--violet);background:var(--violet-light);border:1px solid var(--violet-mid);padding:5px 14px;border-radius:20px;margin-bottom:20px;}
 .pricing-hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;color:var(--black);letter-spacing:-0.04em;line-height:1.1;margin-bottom:16px;}
 .pricing-hero p{font-size:1rem;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7;}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:56px;}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px;}
 .plan{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:32px 28px;box-shadow:var(--shadow-sm);position:relative;transition:transform 0.25s,box-shadow 0.25s;}
 .plan:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
 .plan.featured{background:linear-gradient(160deg,#4f46e5,#3730a3);border-color:transparent;color:#fff;box-shadow:var(--shadow-lg);transform:scale(1.03);}
@@ -189,11 +579,20 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .plan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .plan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
 
+/* WAITLIST */
+.waitlist-card{background:linear-gradient(135deg,#0c0b1e,#1e1b4b);border-radius:20px;padding:40px;text-align:center;color:#fff;margin-bottom:40px;}
+.waitlist-card h2{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:8px;}
+.waitlist-card p{font-size:0.85rem;color:rgba(255,255,255,0.65);margin-bottom:24px;line-height:1.6;}
+.waitlist-form{display:flex;gap:8px;max-width:440px;margin:0 auto;}
+.waitlist-input{flex:1;padding:12px 16px;border-radius:10px;border:none;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;outline:none;color:var(--text);}
+.waitlist-btn{background:var(--violet);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.waitlist-btn:hover{background:#6366f1;}
+.waitlist-note{font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:10px;}
+
 .guarantee{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px 40px;display:flex;align-items:center;gap:24px;box-shadow:var(--shadow-sm);margin-bottom:48px;}
 .guarantee-icon{width:56px;height:56px;background:var(--violet-light);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
 .guarantee h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px;}
 .guarantee p{font-size:0.83rem;color:var(--muted);line-height:1.7;}
-
 .faq-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:24px;text-align:center;}
 .faqs{display:flex;flex-direction:column;gap:8px;max-width:720px;margin:0 auto;}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
@@ -203,7 +602,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .faq-item.open .faq-icon{transform:rotate(45deg);}
 .faq-a{display:none;padding:0 20px 16px;font-size:0.82rem;color:var(--muted);line-height:1.8;}
 .faq-item.open .faq-a{display:block;}
-
 footer{background:var(--black);color:rgba(255,255,255,0.5);text-align:center;padding:28px;font-size:0.75rem;line-height:1.8;}
 footer span{color:rgba(255,255,255,0.8);}
 
@@ -211,36 +609,127 @@ footer span{color:rgba(255,255,255,0.8);}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+@keyframes modalIn{from{opacity:0;transform:scale(0.9) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 
 @media(max-width:900px){
-  .plans{grid-template-columns:1fr;}
+  .plans,.modal-plans{grid-template-columns:1fr;}
   .plan.featured{transform:none;}
-  nav{padding:0 20px;}
+  nav{padding:0 16px;}
   .nav-links{display:none;}
   .tool-grid{grid-template-columns:1fr;}
   .kpi-row{grid-template-columns:1fr 1fr;}
   .guarantee{flex-direction:column;text-align:center;}
+  .modal-body{padding:24px 20px 28px;}
+  .modal-top{padding:28px 24px 24px;}
+  .live-banner{padding:10px 16px;gap:16px;flex-wrap:wrap;justify-content:center;}
+  .pieces-grid{grid-template-columns:repeat(2,1fr);}
+  .share-popup-wrap{bottom:16px;right:16px;left:16px;}
+  .waitlist-form{flex-direction:column;}
+  .credits-badge span{display:none;}
 }
 @media print{
-  nav,.tool-header,.kpi-row,#leftCol,.res-actions{display:none !important;}
+  nav,.tool-header,.kpi-row,#leftCol,.res-actions,#sharePopup,.live-banner{display:none !important;}
   .tool-grid{grid-template-columns:1fr;}
   #resultCard{display:block !important;}
 }
 </style>
 </head>
-<body>
+<body id="artifacts-component-root-html" style="background-color: transparent;">
+
+
 
 <nav>
   <a class="nav-logo" href="#" onclick="showPage('tool');return false;">
-    <div class="logo-badge">LK</div>
-    Lokify
+    <div class="logo-badge">LK</div>Lokify
   </a>
   <div class="nav-links">
     <button class="nav-link active" id="navTool" onclick="showPage('tool')">Analyser un dossier</button>
     <button class="nav-link" id="navPricing" onclick="showPage('pricing')">Tarifs</button>
   </div>
-  <button class="nav-cta" onclick="showPage('pricing')">Voir les offres</button>
+  <div class="nav-right">
+    <div class="credits-badge" id="creditsBadge" onclick="showPage('pricing')">
+      <div class="credits-dot"></div>
+      <span id="creditsText">5 analyses gratuites</span>
+    </div>
+    <button class="nav-cta" onclick="showPage('pricing')">Voir les offres</button>
+  </div>
 </nav>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgradeModal">
+  <div class="modal">
+    <div class="modal-top">
+      <button class="modal-close" onclick="closeModal('upgradeModal')">✕</button>
+      <div class="modal-top-icon">🏠</div>
+      <h2>Vos 5 analyses gratuites sont épuisées</h2>
+      <p>Passez à Pro pour continuer à analyser vos dossiers locataires sans limite — avec rapport PDF et historique complet.</p>
+    </div>
+    <div class="modal-body">
+      <div class="modal-plans">
+        <div class="mplan">
+          <div class="mplan-name">Découverte</div>
+          <div class="mplan-price">Gratuit</div>
+          <div class="mplan-period">5 analyses · pour toujours</div>
+          <ul class="mplan-features">
+            <li><span class="mcheck">✓</span>5 analyses gratuites</li>
+            <li><span class="mcheck">✓</span>Lecture réelle des PDFs</li>
+            <li><span class="mcheck">✓</span>Score et taux d'effort</li>
+            <li><span class="mcheck">✓</span>Vérification des pièces</li>
+          </ul>
+          <button class="mplan-btn ghost" onclick="closeModal('upgradeModal')">Plan actuel</button>
+        </div>
+        <div class="mplan featured">
+          <div class="mplan-badge">⭐ Le plus populaire</div>
+          <div class="mplan-name">Pro</div>
+          <div class="mplan-price">49€</div>
+          <div class="mplan-period">par mois · sans engagement</div>
+          <ul class="mplan-features">
+            <li><span class="mcheck">✓</span><strong>Analyses illimitées</strong></li>
+            <li><span class="mcheck">✓</span>Rapport PDF exportable</li>
+            <li><span class="mcheck">✓</span>Historique des dossiers</li>
+            <li><span class="mcheck">✓</span>Comparaison de candidats</li>
+            <li><span class="mcheck">✓</span>Support prioritaire</li>
+          </ul>
+          <button class="mplan-btn solid" onclick="submitWaitlist()">Essai gratuit 14 jours</button>
+        </div>
+        <div class="mplan">
+          <div class="mplan-name">Réseau</div>
+          <div class="mplan-price">149€</div>
+          <div class="mplan-period">par mois · réseau d'agences</div>
+          <ul class="mplan-features">
+            <li><span class="mcheck">✓</span>Tout le plan Pro</li>
+            <li><span class="mcheck">✓</span><strong>Jusqu'à 10 agences</strong></li>
+            <li><span class="mcheck">✓</span>Dashboard centralisé</li>
+            <li><span class="mcheck">✓</span>Multi-utilisateurs</li>
+            <li><span class="mcheck">✓</span>API disponible</li>
+          </ul>
+          <button class="mplan-btn outline" onclick="alert('Contactez-nous pour un devis')">Nous contacter</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span>🔒 Paiement sécurisé</span>
+        <span>🛡️ 14 jours satisfait ou remboursé</span>
+        <span>❌ Sans engagement</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE POPUP -->
+<div class="share-popup-wrap" id="sharePopup">
+  <div class="share-popup">
+    <button class="share-popup-close" onclick="document.getElementById('sharePopup').classList.remove('show')">✕</button>
+    <div style="font-size:1.5rem;margin-bottom:8px;">🎉</div>
+    <h4>Dossier validé — partagez Lokify !</h4>
+    <p>Gagnez du temps sur chaque dossier. Partagez avec vos collègues !</p>
+    <div class="share-btns">
+      <button class="share-btn email" onclick="window.location.href='mailto:?subject=Lokify%20-%20Analysez%20vos%20dossiers%20en%2030s&amp;body=Bonjour%2C%20je%20vous%20recommande%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app'">✉️ Email</button>
+      <button class="share-btn wa" onclick="window.open('https://wa.me/?text=Testez%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20en%2030s%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app')">💬 WhatsApp</button>
+      <button class="share-btn copy" id="copyBtn" onclick="copyLink()">🔗 Copier</button>
+    </div>
+  </div>
+</div>
 
 <!-- PAGE OUTIL -->
 <div class="page active" id="pageTool">
@@ -250,36 +739,63 @@ footer span{color:rgba(255,255,255,0.8);}
       <h1>Analyse de dossier locataire</h1>
       <p>Déposez les documents — l'IA lit vraiment les fiches de paie et extrait les données réelles.</p>
     </div>
-
     <div class="kpi-row">
       <div class="kpi"><div class="kpi-val" id="kpiTotal">0</div><div class="kpi-label">Dossiers analysés</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--green)" id="kpiOk">0</div><div class="kpi-label">Favorables</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--orange)" id="kpiRes">0</div><div class="kpi-label">Avec réserves</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpiNok">0</div><div class="kpi-label">Défavorables</div></div>
     </div>
-
     <div class="tool-grid">
       <div id="leftCol">
         <div class="card">
+          <!-- TRIAL BANNER -->
+          <div class="trial-banner" id="trialBanner">
+            <div class="trial-left">
+              <div class="trial-icon">🎁</div>
+              <div class="trial-text">
+                <strong id="trialTitle">5 analyses gratuites restantes</strong>
+                Essai gratuit — sans carte bancaire
+              </div>
+            </div>
+            <div class="trial-dots" id="trialDots"><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div></div>
+          </div>
+
+          <!-- PIÈCES PERSONNALISABLES -->
+          <div class="pieces-section">
+            <div class="pieces-section-title">
+              Pièces demandées
+              <span class="pieces-count-badge" id="piecesCountBadge">6 sélectionnées</span>
+            </div>
+            <div class="pieces-grid" id="piecesGrid">
+              <div class="piece-toggle checked" data-piece="Fiche de paie" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">💰</div><div class="pt-label">Fiche de paie</div></div>
+              <div class="piece-toggle checked" data-piece="Contrat de travail" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">📄</div><div class="pt-label">Contrat de travail</div></div>
+              <div class="piece-toggle checked" data-piece="Avis d'imposition" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">🏛️</div><div class="pt-label">Avis d'imposition</div></div>
+              <div class="piece-toggle checked" data-piece="Pièce d'identité" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">🪪</div><div class="pt-label">Pièce d'identité</div></div>
+              <div class="piece-toggle checked" data-piece="Justificatif de domicile" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">🏠</div><div class="pt-label">Justif. domicile</div></div>
+              <div class="piece-toggle checked" data-piece="RIB" onclick="togglePiece(this)"><div class="pt-box">✓</div><div class="pt-icon">🏦</div><div class="pt-label">RIB</div></div>
+              <div class="piece-toggle" data-piece="Quittances de loyer" onclick="togglePiece(this)"><div class="pt-box"></div><div class="pt-icon">🧾</div><div class="pt-label">Quittances loyer</div></div>
+              <div class="piece-toggle" data-piece="Carte étudiant" onclick="togglePiece(this)"><div class="pt-box"></div><div class="pt-icon">🎓</div><div class="pt-label">Carte étudiant</div></div>
+            </div>
+          </div>
+
           <div class="card-title">Nouveau dossier</div>
-          <div class="card-sub">Ajoutez les pièces justificatives — fiches de paie, contrat, pièce d'identité. L'IA lit les documents et extrait les vraies données.</div>
+          <div class="card-sub">Ajoutez les pièces justificatives — l'IA lit les documents et extrait les vraies données.</div>
 
           <div class="upload-zone" id="upZone" onclick="document.getElementById('fileInput').click()">
             <div class="upload-icon-wrap">📎</div>
             <div class="upload-title">Déposer les documents</div>
             <div class="upload-hint">Glissez-déposez ou <span>parcourez</span> · PDF, JPG, PNG</div>
-            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)"/>
+            <input type="file" id="fileInput" multiple="" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)">
           </div>
           <div class="file-list" id="fileList"></div>
-
           <div class="sep"></div>
 
           <div class="form-row">
-            <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"/></div>
-            <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"/></div>
+            <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"></div>
+            <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"></div>
           </div>
           <div class="form-row">
-            <div class="fg"><label class="fl">Loyer mensuel (€)</label><input class="fi" id="fLoyer" type="number" placeholder="900"/></div>
+            <div class="fg"><label class="fl">Loyer mensuel (€)</label><input class="fi" id="fLoyer" type="number" placeholder="900"></div>
             <div class="fg">
               <label class="fl">Type de bien</label>
               <select class="fs" id="fType">
@@ -290,11 +806,45 @@ footer span{color:rgba(255,255,255,0.8);}
               </select>
             </div>
           </div>
-          <div class="fg"><label class="fl">Adresse du bien</label><input class="fi" id="fAdresse" placeholder="12 rue de la Paix, 75001 Paris"/></div>
+          <div class="fg"><label class="fl">Adresse du bien</label><input class="fi" id="fAdresse" placeholder="12 rue de la Paix, 75001 Paris"></div>
+
+          <!-- GARANT -->
+          <div class="garant-toggle" id="garantToggle" onclick="toggleGarant()">
+            <div class="gt-icon">👨‍👩‍👧</div>
+            <div class="gt-text">
+              <strong>Ajouter un garant</strong>
+              <span>Co-signataire, parents, caution solidaire…</span>
+            </div>
+            <div class="gt-arrow">▼</div>
+          </div>
+          <div class="garant-form" id="garantForm">
+            <div class="garant-section-title">Informations du garant</div>
+            <div class="form-row">
+              <div class="fg"><label class="fl">Prénom du garant</label><input class="fi" id="gPrenom" placeholder="Marie"></div>
+              <div class="fg"><label class="fl">Nom du garant</label><input class="fi" id="gNom" placeholder="Dupont"></div>
+            </div>
+            <div class="form-row">
+              <div class="fg">
+                <label class="fl">Lien avec le candidat</label>
+                <select class="fi" id="gLien">
+                  <option value="parent">Parent</option>
+                  <option value="conjoint">Conjoint</option>
+                  <option value="employeur">Employeur</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+              <div class="fg"><label class="fl">Revenus déclarés (€/mois)</label><input class="fi" id="gRevenus" type="number" placeholder="3 200"></div>
+            </div>
+            <div class="garant-upload" onclick="document.getElementById('garantFileInput').click()">
+              📎 Déposer les documents du garant (fiche de paie, pièce d'identité…)
+            </div>
+            <input type="file" id="garantFileInput" multiple="" accept=".pdf,.jpg,.jpeg,.png" onchange="handleGarantFiles(this.files)">
+            <div class="garant-files" id="garantFileList"></div>
+          </div>
 
           <div class="err" id="errBox"></div>
           <button class="btn-main" id="btnAnalyze" onclick="analyze()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
             Analyser ce dossier
           </button>
         </div>
@@ -308,7 +858,6 @@ footer span{color:rgba(255,255,255,0.8);}
             <div class="loader-step" id="loaderStep">Lecture des documents PDF</div>
           </div>
         </div>
-
         <div class="card" id="resultCard">
           <div class="res-head">
             <div>
@@ -321,7 +870,6 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="score-lbl">Score /100</div>
             </div>
           </div>
-
           <div class="rs">
             <div class="sec-title">Indicateurs financiers</div>
             <div class="metrics">
@@ -335,17 +883,21 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="effort-bg"><div class="effort-fill" id="effortFill"></div></div>
             </div>
           </div>
-
+          <div class="rs" id="garantResultSection" style="display:none;">
+            <div class="sec-title">Garant</div>
+            <div class="metrics">
+              <div class="met"><div class="met-lbl">Revenus garant</div><div class="met-val" id="mGRevenu">—</div></div>
+              <div class="met"><div class="met-lbl">Revenus combinés</div><div class="met-val g" id="mGCombine">—</div></div>
+            </div>
+          </div>
           <div class="rs">
             <div class="sec-title">Pièces du dossier</div>
-            <div class="pieces" id="piecesList"></div>
+            <div class="pieces-list" id="piecesList"></div>
           </div>
-
           <div class="rs">
             <div class="sec-title">Résumé du profil</div>
             <div class="summary-box" id="summaryBox"></div>
           </div>
-
           <div class="rs">
             <div class="sec-title">Recommandation</div>
             <div class="verdict" id="verdictBox">
@@ -353,13 +905,27 @@ footer span{color:rgba(255,255,255,0.8);}
               <div class="v-txt" id="vTxt"></div>
             </div>
           </div>
-
           <div class="res-actions">
+            <button class="btn-pdf" onclick="downloadPDF()">📄 Télécharger PDF</button>
             <button class="btn-sec" onclick="window.print()">🖨️ Imprimer</button>
-            <button class="btn-sec" onclick="resetForm()">↺ Nouveau dossier</button>
+            <button class="btn-sec" onclick="resetForm()">↺ Nouveau</button>
+          </div>
+          <!-- TRUST BADGES -->
+          <div class="trust-row">
+            <div class="trust-badge">
+              <div class="trust-icon">🔒</div>
+              <div class="trust-text"><strong>Données sécurisées</strong><span>HTTPS · Documents non conservés</span></div>
+            </div>
+            <div class="trust-badge">
+              <div class="trust-icon">🛡️</div>
+              <div class="trust-text"><strong>Conforme RGPD</strong><span>Données hébergées en Europe</span></div>
+            </div>
+            <div class="trust-badge anthropic-badge">
+              <div class="trust-icon">🤖</div>
+              <div class="trust-text"><strong>Propulsé par Claude</strong><span>Anthropic · Leader mondial IA</span></div>
+            </div>
           </div>
         </div>
-
         <div class="card" id="emptyCard">
           <div class="empty-state">
             <div class="es-icon">🏠</div>
@@ -378,16 +944,16 @@ footer span{color:rgba(255,255,255,0.8);}
     <div class="pricing-hero">
       <div class="pricing-eyebrow">Tarifs transparents</div>
       <h1>Un abonnement simple,<br>sans surprise</h1>
-      <p>Commencez gratuitement. Passez à Pro quand vous êtes prêt. Résiliez à tout moment.</p>
+      <p>Commencez avec 5 analyses gratuites. Passez à Pro quand vous êtes prêt. Résiliez à tout moment.</p>
     </div>
     <div class="plans">
       <div class="plan">
         <div class="plan-name">Découverte</div>
         <div class="plan-price">Gratuit</div>
-        <div class="plan-period">pour toujours</div>
-        <div class="plan-desc">Idéal pour tester Lokify sur quelques dossiers par mois.</div>
+        <div class="plan-period">5 analyses · pour toujours</div>
+        <div class="plan-desc">Idéal pour tester Lokify sur quelques dossiers.</div>
         <ul class="plan-features">
-          <li><span class="feat-check">✓</span>5 analyses par mois</li>
+          <li><span class="feat-check">✓</span>5 analyses gratuites</li>
           <li><span class="feat-check">✓</span>Lecture réelle des PDFs</li>
           <li><span class="feat-check">✓</span>Score et taux d'effort</li>
           <li><span class="feat-check">✓</span>Vérification des pièces</li>
@@ -409,7 +975,7 @@ footer span{color:rgba(255,255,255,0.8);}
           <li><span class="feat-check">✓</span>Alerte dossiers incomplets</li>
           <li><span class="feat-check">✓</span>Support prioritaire</li>
         </ul>
-        <button class="plan-btn solid" onclick="alert('Disponible très prochainement !')">Essai gratuit 14 jours</button>
+        <button class="plan-btn solid" onclick="submitWaitlist()">Essai gratuit 14 jours</button>
       </div>
       <div class="plan">
         <div class="plan-name">Réseau</div>
@@ -427,6 +993,18 @@ footer span{color:rgba(255,255,255,0.8);}
         <button class="plan-btn outline" onclick="alert('Contactez-nous pour un devis')">Nous contacter</button>
       </div>
     </div>
+
+    <!-- WAITLIST -->
+    <div class="waitlist-card">
+      <h2>Rejoignez Lokify Pro en avant-première</h2>
+      <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité dès l'ouverture.</p>
+      <div class="waitlist-form">
+        <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr">
+        <button class="waitlist-btn" onclick="submitWaitlist()">Être notifié</button>
+      </div>
+      <div class="waitlist-note">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
+    </div>
+
     <div class="guarantee">
       <div class="guarantee-icon">🛡️</div>
       <div>
@@ -454,13 +1032,89 @@ footer span{color:rgba(255,255,255,0.8);}
       </div>
     </div>
   </div>
-  <footer><span>Lokify</span> — Analyse de dossiers locataires par intelligence artificielle<br>© 2025 Lokify · Tous droits réservés · RGPD · Mentions légales</footer>
+  <footer><span>Lokify</span> — Analyse de dossiers locataires par intelligence artificielle<br>© 2025 Lokify · Tous droits réservés · RGPD · Mentions légales · Propulsé par Claude / Anthropic</footer>
 </div>
 
 <script>
-const ANTHROPIC_KEY = 'sk-ant-api03-G80ubq8orP4d3koekWJym0sTqGB4p_mk_hZqXKLdy8XFzQzQn4FxZ-Q1n0bPg8Q9JM9rfjbDmG1AXCIy-6Z7bw-cnWVBgAA';
-const PROXY_URL = '/.netlify/functions/analyze';
+const PROXY_URL='/.netlify/functions/analyze';
+const MAX_FREE=5;
+const STORAGE_KEY='lokify_analyses_used';
 
+// ── CREDITS ──
+function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
+function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
+function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
+function updateCreditsUI(){
+  const r=getRemaining(),u=getUsed();
+  const badge=document.getElementById('creditsBadge');
+  const text=document.getElementById('creditsText');
+  const title=document.getElementById('trialTitle');
+  const dots=document.getElementById('trialDots');
+  const banner=document.getElementById('trialBanner');
+  text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
+  badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
+  if(r===0){banner.style.background='var(--red-light)';banner.style.borderColor='#f5c6c2';title.textContent='Analyses gratuites épuisées';title.style.color='var(--red)';}
+  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;title.style.color='#b45309';}
+  else{title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;title.style.color='';}
+  dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
+}
+function checkCredits(){if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}return true;}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
+
+// ── PIECES ──
+function togglePiece(el){
+  el.classList.toggle('checked');
+  el.querySelector('.pt-box').textContent=el.classList.contains('checked')?'✓':'';
+  const count=document.querySelectorAll('.piece-toggle.checked').length;
+  document.getElementById('piecesCountBadge').textContent=`${count} sélectionnée${count>1?'s':''}`;
+}
+function getSelectedPieces(){return [...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
+
+// ── GARANT ──
+let garantFiles=[];
+function toggleGarant(){
+  const t=document.getElementById('garantToggle');
+  const f=document.getElementById('garantForm');
+  t.classList.toggle('open');
+  f.classList.toggle('show');
+}
+function handleGarantFiles(list){
+  [...list].forEach(f=>{if(!garantFiles.find(x=>x.name===f.name))garantFiles.push(f);});
+  renderGarantFiles();
+}
+function renderGarantFiles(){
+  document.getElementById('garantFileList').innerHTML=garantFiles.map((f,i)=>`
+    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
+    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
+    <button class="file-del" onclick="delGarantFile(${i})">✕</button></div>`).join('');
+}
+function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
+
+// ── FILES ──
+let files=[];
+const upZone=document.getElementById('upZone');
+upZone.addEventListener('dragover',e=>{e.preventDefault();upZone.classList.add('over');});
+upZone.addEventListener('dragleave',()=>upZone.classList.remove('over'));
+upZone.addEventListener('drop',e=>{e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
+function handleFiles(list){[...list].forEach(f=>{if(!files.find(x=>x.name===f.name))files.push(f);});renderFiles();}
+function renderFiles(){
+  document.getElementById('fileList').innerHTML=files.map((f,i)=>`
+    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
+    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
+    <button class="file-del" onclick="delFile(${i})">✕</button></div>`).join('');
+}
+function delFile(i){files.splice(i,1);renderFiles();}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── UI ──
 function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(el=>el.classList.remove('active'));
@@ -469,41 +1123,78 @@ function showPage(p){
   window.scrollTo(0,0);
 }
 function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
+function showErr(msg){const e=document.getElementById('errBox');e.textContent='⚠️ '+msg;e.classList.add('show');}
 
-let files=[];
-const upZone=document.getElementById('upZone');
-upZone.addEventListener('dragover',e=>{e.preventDefault();upZone.classList.add('over');});
-upZone.addEventListener('dragleave',()=>upZone.classList.remove('over'));
-upZone.addEventListener('drop',e=>{e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
-
-function handleFiles(list){
-  [...list].forEach(f=>{if(!files.find(x=>x.name===f.name))files.push(f);});
-  renderFiles();
+// ── WAITLIST ──
+function submitWaitlist(){
+  const email=document.getElementById('waitlistEmail')?.value;
+  if(email&&email.includes('@')){
+    alert(`✅ Merci ! Nous vous contacterons à ${email} dès l'ouverture de Lokify Pro.`);
+    if(document.getElementById('waitlistEmail'))document.getElementById('waitlistEmail').value='';
+    closeModal('upgradeModal');
+  } else {
+    showPage('pricing');
+    setTimeout(()=>{const el=document.getElementById('waitlistEmail');if(el){el.focus();el.scrollIntoView({behavior:'smooth',block:'center'});}},300);
+  }
 }
-function renderFiles(){
-  document.getElementById('fileList').innerHTML=files.map((f,i)=>`
-    <div class="file-item">
-      <div class="file-ic">📄</div>
-      <div class="file-nm">${f.name}</div>
-      <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
-      <button class="file-del" onclick="delFile(${i})">✕</button>
-    </div>`).join('');
-}
-function delFile(i){files.splice(i,1);renderFiles();}
 
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>resolve(reader.result.split(',')[1]);
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
+// ── SHARE ──
+function copyLink(){
+  navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ Copié !';
+    setTimeout(()=>btn.textContent='🔗 Copier',2000);
   });
 }
 
+// ── PDF ──
+let lastResult=null,lastMeta=null;
+function downloadPDF(){
+  if(!lastResult||!lastMeta)return;
+  const {prenom,nom,loyer,type,adresse}=lastMeta;
+  const r=lastResult;
+  const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
+  const vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify — ${prenom} ${nom}</title>
+  <style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}
+  h1{font-size:1.6rem;margin-bottom:4px;}h2{font-size:1rem;color:#6b7280;font-weight:normal;margin-bottom:24px;}
+  .score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}
+  .g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}
+  td:first-child{font-weight:600;background:#f5f5ff;width:40%;}
+  .verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}
+  .footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}
+  </style></head><body>
+  <h1>${prenom} ${nom}</h1>
+  <h2>${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois</h2>
+  <div class="score ${r.score>=70?'g':r.score>=45?'o':'r'}">${r.score}</div>
+  <h3>Indicateurs financiers</h3>
+  <table><tr><td>Revenus nets réels</td><td>${r.revenus_nets}</td></tr>
+  <tr><td>Taux d'effort</td><td>${r.taux_effort}%</td></tr>
+  <tr><td>Type de contrat</td><td>${r.type_contrat}</td></tr>
+  <tr><td>Ancienneté</td><td>${r.anciennete}</td></tr>
+  ${r.garant_revenus?`<tr><td>Revenus garant</td><td>${r.garant_revenus}</td></tr><tr><td>Revenus combinés</td><td>${r.revenus_combines}</td></tr>`:''}
+  </table>
+  <h3>Pièces du dossier</h3>
+  <table>${r.pieces.map(p=>`<tr><td>${p.nom}</td><td>${tags[p.statut]}</td></tr>`).join('')}</table>
+  <h3>Résumé du profil</h3><p style="font-size:0.85rem;line-height:1.7;">${r.resume}</p>
+  <div class="verdict ${r.score>=70?'g':r.score>=45?'o':'r'} verdict"><strong>${vmap[r.verdict]||'Analyse complète'}</strong><br/>${r.verdict_detail}</div>
+  <div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app · Propulsé par Claude / Anthropic<br/>
+  Ce rapport est un outil d'aide à la décision. La décision finale appartient à l'agence.</div>
+  </body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`Lokify_${prenom}_${nom}.html`;a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── ANALYZE ──
 const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
 let kTotal=0,kOk=0,kRes=0,kNok=0;
 
 async function analyze(){
+  if(!checkCredits())return;
   const prenom=document.getElementById('fPrenom').value.trim();
   const nom=document.getElementById('fNom').value.trim();
   const loyer=document.getElementById('fLoyer').value;
@@ -511,9 +1202,15 @@ async function analyze(){
   const adresse=document.getElementById('fAdresse').value.trim();
   const errBox=document.getElementById('errBox');
   errBox.classList.remove('show');
-
   if(!prenom||!nom){showErr('Veuillez renseigner le prénom et le nom.');return;}
   if(!loyer||loyer<=0){showErr('Veuillez renseigner le montant du loyer.');return;}
+
+  const hasGarant=document.getElementById('garantForm').classList.contains('show');
+  const gPrenom=document.getElementById('gPrenom').value.trim();
+  const gNom=document.getElementById('gNom').value.trim();
+  const gLien=document.getElementById('gLien').value;
+  const gRevenus=document.getElementById('gRevenus').value;
+  const selectedPieces=getSelectedPieces();
 
   document.getElementById('emptyCard').style.display='none';
   document.getElementById('resultCard').classList.remove('show');
@@ -525,59 +1222,61 @@ async function analyze(){
   sl.textContent=loadSteps[0];
   const iv=setInterval(()=>{if(si<loadSteps.length-1)sl.textContent=loadSteps[++si];},800);
 
-  try {
-    const fichiers_base64=[];
-    for(const f of files){
-      const data=await fileToBase64(f);
-      fichiers_base64.push({type:f.type||'application/pdf',data,name:f.name});
-    }
-
+  try{
+    const allFiles=[...files,...garantFiles];
     const msgContent=[];
-    for(const f of fichiers_base64){
-      if(f.type==='application/pdf'){
-        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.data}});
+    for(const f of allFiles){
+      const data=await fileToBase64(f);
+      if(f.type==='application/pdf'||f.name.endsWith('.pdf')){
+        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data}});
       } else {
-        msgContent.push({type:'image',source:{type:'base64',media_type:f.type,data:f.data}});
+        msgContent.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data}});
       }
     }
-    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.
 
-Lis attentivement les documents fournis et extrais les vraies données. IMPORTANT : vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le clairement dans le resume et mets le verdict à DEFAVORABLE. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
-{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"Apprenti","anciennete":"3 ans","pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Avis d imposition","statut":"missing"},{"nom":"Piece identite","statut":"ok"},{"nom":"Justificatif domicile","statut":"missing"},{"nom":"RIB","statut":"missing"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+    const garantInfo=hasGarant&&gPrenom?`\n\nGARANT: ${gPrenom} ${gNom} (${gLien}), revenus déclarés: ${gRevenus}€/mois. Les documents du garant sont inclus. Vérifie que le nom du garant correspond à sa pièce d'identité.`:'';
+    const piecesInfo=`\n\nPIÈCES DEMANDÉES PAR L'AGENCE (vérifie uniquement celles-ci): ${selectedPieces.join(', ')}.`;
 
-    const resp = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 1500,
-        messages: [{role: 'user', content: msgContent}]
-      })
-    });
+    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.${garantInfo}${piecesInfo}
 
+IMPORTANT: Vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le dans le resume et mets le verdict à DEFAVORABLE.
+
+Lis attentivement tous les documents et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+
+    const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
     clearInterval(iv);
-    const apiResp = await resp.json();
-    if(apiResp.error) throw new Error('API: ' + apiResp.error.message);
-    if(!apiResp.content || !apiResp.content[0]) throw new Error('Pas de réponse: ' + JSON.stringify(apiResp).substring(0,100));
-    const rawText = apiResp.content[0].text;
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('Format invalide: ' + rawText.substring(0,100));
-    const result = JSON.parse(jsonMatch[0]);
+    const apiResp=await resp.json();
+    if(apiResp.error)throw new Error('API: '+apiResp.error.message);
+    if(!apiResp.content||!apiResp.content[0])throw new Error('Pas de réponse: '+JSON.stringify(apiResp).substring(0,100));
+    const rawText=apiResp.content[0].text;
+    const jsonMatch=rawText.match(/\{[\s\S]*\}/);
+    if(!jsonMatch)throw new Error('Format invalide: '+rawText.substring(0,100));
+    const result=JSON.parse(jsonMatch[0]);
+
+    incrementUsed();
+    updateCreditsUI();
+    lastResult=result;
+    lastMeta={prenom,nom,loyer,type,adresse};
 
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('btnAnalyze').disabled=false;
-    showResult(result,prenom,nom,loyer,type,adresse);
+    showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
 
     kTotal++;
-    if(result.verdict==='FAVORABLE') kOk++;
-    else if(result.verdict==='FAVORABLE_RESERVE') kRes++;
+    if(result.verdict==='FAVORABLE')kOk++;
+    else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
     else kNok++;
     document.getElementById('kpiTotal').textContent=kTotal;
     document.getElementById('kpiOk').textContent=kOk;
     document.getElementById('kpiRes').textContent=kRes;
     document.getElementById('kpiNok').textContent=kNok;
 
-  } catch(e){
+    if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
+    if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
+
+  }catch(e){
     clearInterval(iv);
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('emptyCard').style.display='block';
@@ -586,21 +1285,14 @@ Lis attentivement les documents fournis et extrais les vraies données. IMPORTAN
   }
 }
 
-function showResult(r,prenom,nom,loyer,type,adresse){
+function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
-
   const srcTag=document.getElementById('sourceTag');
-  if(r.donnees_lues){
-    srcTag.innerHTML=`<div class="source-tag">✓ Données lues depuis les documents</div>`;
-  } else {
-    srcTag.innerHTML=`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
-  }
-
+  srcTag.innerHTML=r.donnees_lues?`<div class="source-tag">✓ Données lues depuis les documents</div>`:`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
   const ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
-
   const e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
   document.getElementById('mRevenu').textContent=r.revenus_nets;
   document.getElementById('mRevenu').className='met-val '+ecls;
@@ -609,38 +1301,56 @@ function showResult(r,prenom,nom,loyer,type,adresse){
   document.getElementById('mContrat').textContent=r.type_contrat;
   document.getElementById('mContrat').className='met-val '+(r.type_contrat==='CDI'||r.type_contrat==='Fonctionnaire'?'g':r.type_contrat==='CDD'?'o':'');
   document.getElementById('mAnc').textContent=r.anciennete;
-
   const fill=document.getElementById('effortFill');
   setTimeout(()=>{fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
 
+  const garantSection=document.getElementById('garantResultSection');
+  if(hasGarant&&r.garant_revenus){
+    garantSection.style.display='block';
+    document.getElementById('mGRevenu').textContent=r.garant_revenus;
+    document.getElementById('mGCombine').textContent=r.revenus_combines||'—';
+  } else {garantSection.style.display='none';}
+
   const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
   document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
-    <div class="piece">
-      <div class="pdot ${p.statut}"></div>
-      <div class="pname">${p.nom}</div>
-      <div class="ptag ${p.statut}">${tags[p.statut]}</div>
-    </div>`).join('');
-
+    <div class="piece-row"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
-
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
   document.getElementById('vIcon').textContent=v.icon;
   document.getElementById('vTxt').innerHTML=`<strong>${v.lbl}</strong>${r.verdict_detail}`;
-
   document.getElementById('resultCard').classList.add('show');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function showErr(msg){const e=document.getElementById('errBox');e.textContent='⚠️ '+msg;e.classList.add('show');}
 function resetForm(){
-  files=[];renderFiles();
-  ['fPrenom','fNom','fLoyer','fAdresse'].forEach(id=>document.getElementById(id).value='');
+  files=[];garantFiles=[];renderFiles();renderGarantFiles();
+  ['fPrenom','fNom','fLoyer','fAdresse','gPrenom','gNom','gRevenus'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('resultCard').classList.remove('show');
   document.getElementById('emptyCard').style.display='block';
   document.getElementById('errBox').classList.remove('show');
+  document.getElementById('garantToggle').classList.remove('open');
+  document.getElementById('garantForm').classList.remove('show');
+  document.getElementById('sharePopup').classList.remove('show');
+  lastResult=null;lastMeta=null;
+}
+
+// Init
+updateCreditsUI();
+</script>
+<button id="copyCodeBtn" onclick="copyAllCode()">📋 Copier tout le code</button>
+<script>
+function copyAllCode(){
+  const code=document.documentElement.outerHTML;
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn=document.getElementById('copyCodeBtn');
+    btn.textContent='✓ Copié !';
+    btn.style.background='#2e7d52';
+    setTimeout(()=>{btn.innerHTML='📋 Copier tout le code';btn.style.background='';},2500);
+  });
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
