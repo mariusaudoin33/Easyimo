@@ -542,7 +542,7 @@ async function analyze(){
     }
     msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.
 
-Lis attentivement les documents fournis et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
+Lis attentivement les documents fournis et extrais les vraies données. IMPORTANT : vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le clairement dans le resume et mets le verdict à DEFAVORABLE. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
 {"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"Apprenti","anciennete":"3 ans","pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Avis d imposition","statut":"missing"},{"nom":"Piece identite","statut":"ok"},{"nom":"Justificatif domicile","statut":"missing"},{"nom":"RIB","statut":"missing"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
 
     const resp = await fetch(PROXY_URL, {
