@@ -1178,23 +1178,25 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('summaryBox').innerHTML=r.resume;
 
   // Bloc anti-fraude
-  const fraudeSection = document.getElementById('fraudeSection');
-  if(r.fraude_score || (r.fraude_alertes && r.fraude_alertes.length > 0)){
-    fraudeSection.style.display='block';
-    const fs = r.fraude_score || 'INCONNU';
-    const fsCls = fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
-    const fsIcon = fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
-    const alertes = r.fraude_alertes || [];
-    document.getElementById('fraudeContent').innerHTML = \`
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:\${alertes.length>0?'12px':'0'}">
-        <span style="font-size:1.2rem;">\${fsIcon}</span>
-        <span class="met-val \${fsCls}" style="font-size:0.9rem;">Risque \${fs}</span>
-      </div>
-      \${alertes.length>0 ? \`<div style="display:flex;flex-direction:column;gap:6px;">\${alertes.map(a=>\`<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ \${a}</div>\`).join('')}</div>\` : \`<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>\`}
-    \`;
+  var fraudeSection = document.getElementById('fraudeSection');
+  var fs = r.fraude_score || 'FAIBLE';
+  var alertes = r.fraude_alertes || [];
+  fraudeSection.style.display = 'block';
+  var fsCls = fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
+  var fsIcon = fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:' + (alertes.length>0?'12px':'0') + '">';
+  html += '<span style="font-size:1.2rem;">' + fsIcon + '</span>';
+  html += '<span class="met-val ' + fsCls + '" style="font-size:0.9rem;">Risque ' + fs + '</span></div>';
+  if(alertes.length > 0){
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for(var i=0;i<alertes.length;i++){
+      html += '<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ ' + alertes[i] + '</div>';
+    }
+    html += '</div>';
   } else {
-    fraudeSection.style.display='none';
+    html += '<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>';
   }
+  document.getElementById('fraudeContent').innerHTML = html;
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
