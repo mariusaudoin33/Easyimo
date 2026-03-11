@@ -654,6 +654,10 @@ footer small{font-size:11px;color:#888;}
               <div class="v-txt" id="vTxt"></div>
             </div>
           </div>
+          <div class="rs" id="fraudeSection" style="display:none;">
+            <div class="sec-title">🔍 Détection de fraude</div>
+            <div id="fraudeContent"></div>
+          </div>
           <div class="res-actions">
             <button class="btn-pdf" onclick="downloadPDF()">📄 Télécharger PDF</button>
             <button class="btn-sec" onclick="window.print()">🖨️ Imprimer</button>
@@ -1078,8 +1082,18 @@ async function analyze(){
 
 IMPORTANT: Vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le dans le resume et mets le verdict à DEFAVORABLE.
 
-Lis attentivement tous les documents et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
-{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+Lis attentivement tous les documents et extrais les vraies données.
+
+ANALYSE ANTI-FRAUDE OBLIGATOIRE - Vérifie les points suivants sur chaque fiche de paie :
+1. Cohérence des montants : salaire brut, cotisations et salaire net doivent être mathématiquement cohérents
+2. Dates : la date de paiement ne doit pas tomber un weekend ou jour férié
+3. Typographie : polices, alignements et espacements doivent être homogènes (anomalie = possible modification)
+4. Numéros : SIRET (14 chiffres), numéro de sécurité sociale (15 chiffres) doivent être valides en format
+5. Cohérence du salaire : le salaire doit être cohérent avec le poste et le secteur mentionnés
+6. Répétitions suspectes : détecter si le même document semble réutilisé avec des modifications
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true,"fraude_score":"FAIBLE","fraude_alertes":["Exemple alerte si détectée"]}`});
 
     const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
@@ -1162,6 +1176,25 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
     <div class="piece-row"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
+
+  // Bloc anti-fraude
+  const fraudeSection = document.getElementById('fraudeSection');
+  if(r.fraude_score || (r.fraude_alertes && r.fraude_alertes.length > 0)){
+    fraudeSection.style.display='block';
+    const fs = r.fraude_score || 'INCONNU';
+    const fsCls = fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
+    const fsIcon = fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
+    const alertes = r.fraude_alertes || [];
+    document.getElementById('fraudeContent').innerHTML = \`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:\${alertes.length>0?'12px':'0'}">
+        <span style="font-size:1.2rem;">\${fsIcon}</span>
+        <span class="met-val \${fsCls}" style="font-size:0.9rem;">Risque \${fs}</span>
+      </div>
+      \${alertes.length>0 ? \`<div style="display:flex;flex-direction:column;gap:6px;">\${alertes.map(a=>\`<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ \${a}</div>\`).join('')}</div>\` : \`<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>\`}
+    \`;
+  } else {
+    fraudeSection.style.display='none';
+  }
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
