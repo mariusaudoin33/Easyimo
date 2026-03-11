@@ -1,299 +1,10 @@
-<html lang="fr" style="background-color: transparent;"><head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script>
-      (function() {
-        const originalConsole = window.console;
-        window.console = {
-          log: (...args) => {
-            originalConsole.log(...args);
-            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
-          },
-          error: (...args) => {
-            originalConsole.error(...args);
-            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
-          },
-          warn: (...args) => {
-            originalConsole.warn(...args);
-            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
-          }
-        };
-
-        let requestId = 0;
-        let callbacksMap = new Map();
-        let streamControllers = new Map();
-        
-        window.claude = {
-          complete: (prompt) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
-            });
-          }
-        };
-
-        window.storage = {
-          get: (key, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
-            });
-          },
-          set: (key, value, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
-            });
-          },
-          delete: (key, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
-            });
-          },
-          list: (prefix, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
-            });
-          }
-        };
-
-        let pendingBlobs = new Map();
-        URL.createObjectURL = (blob) => {
-          // Store the blob and create an ID and URL for it
-          const blobId = `blob-${Date.now()}-${Math.random()}`;
-          pendingBlobs.set(blobId, blob);
-          return `blob-request://${blobId}`;
-        };
-
-        URL.revokeObjectURL = (url) => {
-          // Remove the blob from our store
-          const blobId = url.replace("blob-request://", "");
-          pendingBlobs.delete(blobId);
-        };
-
-        const getBlobFromURL = (url) => {
-          const blobId = url.replace("blob-request://", "");
-          return pendingBlobs.get(blobId);
-        };
-
-        // Override global fetch with streaming support
-        window.fetch = (url, init = {}) => {
-          return new Promise((resolve, reject) => {
-            const id = requestId++;
-            const channelId = `fetch-${id}-${Date.now()}`;
-            
-            callbacksMap.set(id, { 
-              resolve: (response) => {
-                // Create a ReadableStream for the response body
-                const stream = new ReadableStream({
-                  start(controller) {
-                    streamControllers.set(channelId, controller);
-                  },
-                  cancel() {
-                    streamControllers.delete(channelId);
-                  }
-                });
-                
-                // Create and return the Response with the stream
-                resolve(new Response(stream, {
-                  status: response.status,
-                  statusText: response.statusText,
-                  headers: response.headers
-                }));
-              },
-              reject,
-              channelId
-            });
-            
-            window.parent.postMessage({
-              type: 'proxyFetch',
-              id,
-              url,
-              init,
-              channelId
-            }, '*');
-          });
-        };
-
-        window.addEventListener('message', async (event) => {
-          if (event.data.type === 'takeScreenshot') {
-            const rootElement = document.getElementById('artifacts-component-root-html');
-            if (!rootElement) {
-              window.parent.postMessage({
-                type: 'screenshotError',
-                error: new Error('Root element not found'),
-              }, '*');
-            }
-            const screenshot = await htmlToImage.toPng(rootElement, {
-              imagePlaceholder:
-                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
-            });
-            window.parent.postMessage({
-              type: 'screenshotData',
-              data: screenshot,
-            }, '*');
-          } else if (event.data.type === 'claudeComplete') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.completion);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'proxyFetchResponse') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-              callbacksMap.delete(event.data.id);
-            } else {
-              // Initial response with headers, status, etc.
-              callback.resolve({
-                status: event.data.status,
-                statusText: event.data.statusText,
-                headers: event.data.headers
-              });
-              // Don't delete the callback yet if streaming
-              if (!event.data.body) {
-                callbacksMap.delete(event.data.id);
-              }
-            }
-          } else if (event.data.type === 'proxyFetchStream') {
-            // Handle streaming data chunks
-            const controller = streamControllers.get(event.data.channelId);
-            if (controller) {
-              if (event.data.error) {
-                controller.error(new Error(event.data.error));
-                streamControllers.delete(event.data.channelId);
-              } else if (event.data.done) {
-                controller.close();
-                streamControllers.delete(event.data.channelId);
-                // Clean up the callback
-                const callback = Array.from(callbacksMap.entries()).find(
-                  ([_, value]) => value.channelId === event.data.channelId
-                );
-                if (callback) {
-                  callbacksMap.delete(callback[0]);
-                }
-              } else if (event.data.chunk) {
-                controller.enqueue(new Uint8Array(event.data.chunk));
-              }
-            }
-          } else if (event.data.type === 'storageGet') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageSet') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageDelete') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageList') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          }
-        });
-
-        window.addEventListener('click', (event) => {
-          const isEl = event.target instanceof HTMLElement;
-          if (!isEl) return;
-    
-          // find ancestor links
-          const linkEl = event.target.closest("a");
-          if (!linkEl || !linkEl.href) return;
-    
-          event.preventDefault();
-          event.stopImmediatePropagation();
-    
-          if (linkEl.href.startsWith("blob-request:")) {
-            const blob = getBlobFromURL(linkEl.href);
-            if (!blob) return;
-            void blob.arrayBuffer().then((data) => {
-              window.parent.postMessage({
-                type: "downloadFile",
-                filename: linkEl.download,
-                data,
-                mimeType: blob.type || "application/octet-stream",
-              });
-            });
-          } else if (linkEl.href.startsWith("data:")) {
-            const [header, base64Data] = linkEl.href.split(",");
-            const mimeMatch = header.match(/data:([^;]+)/);
-            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-            const binaryString = atob(base64Data);
-            const data = Uint8Array.from(binaryString, (c) =>
-              c.charCodeAt(0),
-            ).buffer;
-            window.parent.postMessage({
-              type: "downloadFile",
-              filename: linkEl.download,
-              data,
-              mimeType,
-            });
-          } else {
-            let linkUrl;
-            try {
-              linkUrl = new URL(linkEl.href);
-            } catch (error) {
-              return;
-            }
-    
-            if (linkUrl.hostname === window.location.hostname) return;
-      
-            window.parent.postMessage({
-              type: 'openExternal',
-              href: linkEl.href,
-            }, '*');
-          }
-      });
-
-        const originalOpen = window.open;
-        window.open = function (url) {
-          window.parent.postMessage({
-            type: "openExternal",
-            href: url,
-          }, "*");
-        };
-
-        window.addEventListener('error', (event) => {
-          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
-        });
-      })();
-    </script>
-  
-<style>
-#copyCodeBtn{position:fixed;bottom:24px;right:24px;z-index:9999;background:#0c0b1e;color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:all 0.2s;}
-#copyCodeBtn:hover{background:#4f46e5;transform:translateY(-2px);}
-</style>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lokify — Analyse de dossiers locataires par IA</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&amp;family=Instrument+Sans:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
   --bg:#f5f5ff;--white:#fff;--black:#0c0b1e;--text:#1e1b4b;--muted:#6b7280;--border:#e0dff8;
@@ -635,7 +346,7 @@ footer span{color:rgba(255,255,255,0.8);}
 }
 </style>
 </head>
-<body id="artifacts-component-root-html" style="background-color: transparent;">
+<body>
 
 
 
@@ -724,7 +435,7 @@ footer span{color:rgba(255,255,255,0.8);}
     <h4>Dossier validé — partagez Lokify !</h4>
     <p>Gagnez du temps sur chaque dossier. Partagez avec vos collègues !</p>
     <div class="share-btns">
-      <button class="share-btn email" onclick="window.location.href='mailto:?subject=Lokify%20-%20Analysez%20vos%20dossiers%20en%2030s&amp;body=Bonjour%2C%20je%20vous%20recommande%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app'">✉️ Email</button>
+      <button class="share-btn email" onclick="window.location.href='mailto:?subject=Lokify%20-%20Analysez%20vos%20dossiers%20en%2030s&body=Bonjour%2C%20je%20vous%20recommande%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app'">✉️ Email</button>
       <button class="share-btn wa" onclick="window.open('https://wa.me/?text=Testez%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20en%2030s%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app')">💬 WhatsApp</button>
       <button class="share-btn copy" id="copyBtn" onclick="copyLink()">🔗 Copier</button>
     </div>
@@ -757,7 +468,7 @@ footer span{color:rgba(255,255,255,0.8);}
                 Essai gratuit — sans carte bancaire
               </div>
             </div>
-            <div class="trial-dots" id="trialDots"><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div><div class="trial-dot"></div></div>
+            <div class="trial-dots" id="trialDots"></div>
           </div>
 
           <!-- PIÈCES PERSONNALISABLES -->
@@ -785,17 +496,17 @@ footer span{color:rgba(255,255,255,0.8);}
             <div class="upload-icon-wrap">📎</div>
             <div class="upload-title">Déposer les documents</div>
             <div class="upload-hint">Glissez-déposez ou <span>parcourez</span> · PDF, JPG, PNG</div>
-            <input type="file" id="fileInput" multiple="" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)">
+            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)"/>
           </div>
           <div class="file-list" id="fileList"></div>
           <div class="sep"></div>
 
           <div class="form-row">
-            <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"></div>
-            <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"></div>
+            <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"/></div>
+            <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"/></div>
           </div>
           <div class="form-row">
-            <div class="fg"><label class="fl">Loyer mensuel (€)</label><input class="fi" id="fLoyer" type="number" placeholder="900"></div>
+            <div class="fg"><label class="fl">Loyer mensuel (€)</label><input class="fi" id="fLoyer" type="number" placeholder="900"/></div>
             <div class="fg">
               <label class="fl">Type de bien</label>
               <select class="fs" id="fType">
@@ -806,7 +517,7 @@ footer span{color:rgba(255,255,255,0.8);}
               </select>
             </div>
           </div>
-          <div class="fg"><label class="fl">Adresse du bien</label><input class="fi" id="fAdresse" placeholder="12 rue de la Paix, 75001 Paris"></div>
+          <div class="fg"><label class="fl">Adresse du bien</label><input class="fi" id="fAdresse" placeholder="12 rue de la Paix, 75001 Paris"/></div>
 
           <!-- GARANT -->
           <div class="garant-toggle" id="garantToggle" onclick="toggleGarant()">
@@ -820,8 +531,8 @@ footer span{color:rgba(255,255,255,0.8);}
           <div class="garant-form" id="garantForm">
             <div class="garant-section-title">Informations du garant</div>
             <div class="form-row">
-              <div class="fg"><label class="fl">Prénom du garant</label><input class="fi" id="gPrenom" placeholder="Marie"></div>
-              <div class="fg"><label class="fl">Nom du garant</label><input class="fi" id="gNom" placeholder="Dupont"></div>
+              <div class="fg"><label class="fl">Prénom du garant</label><input class="fi" id="gPrenom" placeholder="Marie"/></div>
+              <div class="fg"><label class="fl">Nom du garant</label><input class="fi" id="gNom" placeholder="Dupont"/></div>
             </div>
             <div class="form-row">
               <div class="fg">
@@ -833,18 +544,18 @@ footer span{color:rgba(255,255,255,0.8);}
                   <option value="autre">Autre</option>
                 </select>
               </div>
-              <div class="fg"><label class="fl">Revenus déclarés (€/mois)</label><input class="fi" id="gRevenus" type="number" placeholder="3 200"></div>
+              <div class="fg"><label class="fl">Revenus déclarés (€/mois)</label><input class="fi" id="gRevenus" type="number" placeholder="3 200"/></div>
             </div>
             <div class="garant-upload" onclick="document.getElementById('garantFileInput').click()">
               📎 Déposer les documents du garant (fiche de paie, pièce d'identité…)
             </div>
-            <input type="file" id="garantFileInput" multiple="" accept=".pdf,.jpg,.jpeg,.png" onchange="handleGarantFiles(this.files)">
+            <input type="file" id="garantFileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleGarantFiles(this.files)"/>
             <div class="garant-files" id="garantFileList"></div>
           </div>
 
           <div class="err" id="errBox"></div>
           <button class="btn-main" id="btnAnalyze" onclick="analyze()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             Analyser ce dossier
           </button>
         </div>
@@ -999,7 +710,7 @@ footer span{color:rgba(255,255,255,0.8);}
       <h2>Rejoignez Lokify Pro en avant-première</h2>
       <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité dès l'ouverture.</p>
       <div class="waitlist-form">
-        <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr">
+        <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr"/>
         <button class="waitlist-btn" onclick="submitWaitlist()">Être notifié</button>
       </div>
       <div class="waitlist-note">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
@@ -1339,18 +1050,5 @@ function resetForm(){
 // Init
 updateCreditsUI();
 </script>
-<button id="copyCodeBtn" onclick="copyAllCode()">📋 Copier tout le code</button>
-<script>
-function copyAllCode(){
-  const code=document.documentElement.outerHTML;
-  navigator.clipboard.writeText(code).then(()=>{
-    const btn=document.getElementById('copyCodeBtn');
-    btn.textContent='✓ Copié !';
-    btn.style.background='#2e7d52';
-    setTimeout(()=>{btn.innerHTML='📋 Copier tout le code';btn.style.background='';},2500);
-  });
-}
-</script>
-
-
-</body></html>
+</body>
+</html>
