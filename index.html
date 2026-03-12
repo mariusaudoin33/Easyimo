@@ -976,7 +976,13 @@ function handleFiles(list){
   for(var i=0;i<list.length;i++){
     var f=list[i];var found=false;
     for(var j=0;j<files.length;j++){if(files[j].name===f.name){found=true;break;}}
-    if(!found)files.push(f);
+    if(!found){
+      if(f.size>3*1024*1024){
+        showErr('Fichier trop lourd (max 3 Mo) : '+f.name);
+        continue;
+      }
+      files.push(f);
+    }
   }
   renderFiles();
 }
@@ -991,10 +997,28 @@ function delFile(i){files.splice(i,1);renderFiles();}
 
 function fileToBase64(file){
   return new Promise(function(resolve,reject){
-    var r=new FileReader();
-    r.onload=function(){resolve(r.result.split(',')[1]);};
-    r.onerror=function(){reject(new Error('Lecture fichier échouée'));};
-    r.readAsDataURL(file);
+    if(file.type.indexOf('image/')===0){
+      var img=new Image();
+      var url=URL.createObjectURL(file);
+      img.onload=function(){
+        var maxW=1200,maxH=1200;
+        var w=img.width,h=img.height;
+        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+        if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
+        var canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg',0.75).split(',')[1]);
+      };
+      img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Image illisible'));};
+      img.src=url;
+    } else {
+      var r=new FileReader();
+      r.onload=function(){resolve(r.result.split(',')[1]);};
+      r.onerror=function(){reject(new Error('Lecture fichier échouée'));};
+      r.readAsDataURL(file);
+    }
   });
 }
 
@@ -1119,7 +1143,7 @@ function analyze(){
     var piecesInfo='\n\nPIÈCES DEMANDÉES (vérifie uniquement celles-ci): '+selectedPieces.join(', ')+'.';
     msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
     fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,messages:[{role:'user',content:msgContent}]})})
     .then(function(resp){
       if(!resp.ok)throw new Error('Erreur réseau: '+resp.status);
       return resp.json();
