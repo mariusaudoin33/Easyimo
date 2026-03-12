@@ -815,24 +815,25 @@ footer small{font-size:11px;color:#888;}
 </div>
 
 <script>
-const PROXY_URL='/.netlify/functions/analyze';
-const MAX_FREE=5;
-const STORAGE_KEY='lokify_analyses_used';
-const HISTORY_KEY='lokify_history';
+var PROXY_URL='/.netlify/functions/analyze';
+var MAX_FREE=5;
+var STORAGE_KEY='lokify_analyses_used';
+var HISTORY_KEY='lokify_history';
 
 // ── HISTORIQUE ──
 function getHistory(){
-  try{
-    const raw=localStorage.getItem(HISTORY_KEY);
-    return raw?JSON.parse(raw):[];
-  }catch(e){return[];}
+  try{var raw=localStorage.getItem(HISTORY_KEY);return raw?JSON.parse(raw):[];}catch(e){return[];}
 }
 function saveHistory(h){
   try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}
 }
 function addToHistory(entry){
-  const h=getHistory();
-  var newEntry={}; for(var k in entry){newEntry[k]=entry[k];} newEntry.id=Date.now(); newEntry.date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); h.unshift(newEntry);
+  var h=getHistory();
+  var newE={};
+  for(var k in entry){newE[k]=entry[k];}
+  newE.id=Date.now();
+  newE.date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  h.unshift(newE);
   saveHistory(h);
   renderHistory();
 }
@@ -845,14 +846,14 @@ function clearHistory(){
   if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}
 }
 
-let currentFilter='all';
+var currentFilter='all';
 function filterHistory(f){
   currentFilter=f;
-  var fbs=document.querySelectorAll('.filter-btn');for(var i=0;i<fbs.length;i++){fbs[i].classList.remove('active');}
-  document.getElementById('filter'+(f==='all'?'All':f==='FAVORABLE'?'Fav':f==='FAVORABLE_RESERVE'?'Res':'Nok')).classList.add('active');
+  var fbs=document.querySelectorAll('.filter-btn');
+  for(var i=0;i<fbs.length;i++){fbs[i].classList.remove('active');}
+  document.getElementById('filter-'+f).classList.add('active');
   renderHistory();
 }
-
 function renderHistory(){
   var all=getHistory();
   var data=currentFilter==='all'?all:all.filter(function(e){return e.verdict===currentFilter;});
@@ -860,16 +861,14 @@ function renderHistory(){
   var ok=all.filter(function(e){return e.verdict==='FAVORABLE';}).length;
   var res=all.filter(function(e){return e.verdict==='FAVORABLE_RESERVE';}).length;
   var nok=all.filter(function(e){return e.verdict==='DEFAVORABLE';}).length;
-
   document.getElementById('historyStats').innerHTML=
     '<div class="kpi"><div class="kpi-val">'+total+'</div><div class="kpi-label">Total analysés</div></div>'+
     '<div class="kpi"><div class="kpi-val" style="color:var(--green)">'+ok+'</div><div class="kpi-label">Favorables</div></div>'+
     '<div class="kpi"><div class="kpi-val" style="color:var(--orange)">'+res+'</div><div class="kpi-label">Avec réserves</div></div>'+
     '<div class="kpi"><div class="kpi-val" style="color:var(--red)">'+nok+'</div><div class="kpi-label">Défavorables</div></div>';
-
   var container=document.getElementById('historyContent');
   if(data.length===0){
-    var emptyBtn=all.length===0?'<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>':'';
+    var emptyBtn=all.length===0?'<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage(\'tool\')">Analyser un dossier</button>':'';
     container.innerHTML='<div class="history-empty">'+
       '<div class="es-icon">'+(all.length===0?'📋':'🔍')+'</div>'+
       '<h3>'+(all.length===0?'Aucune analyse pour l instant':'Aucun résultat pour ce filtre')+'</h3>'+
@@ -899,225 +898,287 @@ function renderHistory(){
     rows+'</div>';
 }
 
-function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
-function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
+// ── CRÉDITS ──
+function getUsed(){var v=parseInt(localStorage.getItem(STORAGE_KEY));return isNaN(v)?0:v;}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
-function updateCreditsUI(){
-  const r=getRemaining(),u=getUsed();
-  const badge=document.getElementById('creditsBadge');
-  const text=document.getElementById('creditsText');
-  const title=document.getElementById('trialTitle');
-  const dots=document.getElementById('trialDots');
-  const banner=document.getElementById('trialBanner');
-  text.textContent=r===0?'Passer à Pro':(r>1?r+' analyses gratuites':r+' analyse gratuite');
-  badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
-  if(r===0){banner.style.background='var(--red-light)';banner.style.borderColor='#f5c6c2';title.textContent='Analyses gratuites épuisées';title.style.color='var(--red)';}
-  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent='Plus que '+r+(r>1?' analyses gratuites':' analyse gratuite');title.style.color='#b45309';}
-  else{title.textContent=(r>1?r+' analyses gratuites restantes':r+' analyse gratuite restante');title.style.color='';}
-  dots.innerHTML=Array.from({length:MAX_FREE},function(_,i){return '<div class="trial-dot'+(i<u?' used':'')+'"></div>';}).join('');
+function incrementUsed(){localStorage.setItem(STORAGE_KEY,getUsed()+1);}
+function checkCredits(){
+  if(getRemaining()>0)return true;
+  document.getElementById('upgradeModal').classList.add('show');
+  return false;
 }
-function checkCredits(){if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}return true;}
-function closeModal(id){document.getElementById(id).classList.remove('show');}
-document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
+function updateCreditsUI(){
+  var r=getRemaining(),u=getUsed();
+  var badge=document.getElementById('creditsBadge');
+  var text=document.getElementById('creditsText');
+  var title=document.getElementById('trialTitle');
+  var dots=document.getElementById('trialDots');
+  var banner=document.getElementById('trialBanner');
+  if(r===0){
+    badge.textContent='Pro requis';
+    badge.className='credits-badge used';
+    text.textContent='Passer à Pro';
+    if(banner)banner.className='trial-banner used';
+    if(title)title.textContent='Limite atteinte';
+  } else {
+    badge.textContent=r+' analyse'+(r>1?'s':'')+' gratuite'+(r>1?'s':'');
+    badge.className='credits-badge';
+    text.textContent=(r>1?r+' analyses gratuites':r+' analyse gratuite');
+    if(title)title.textContent=(r>1?r+' analyses gratuites restantes':r+' analyse gratuite restante');
+  }
+  if(dots){
+    var dotsHtml='';
+    for(var i=0;i<MAX_FREE;i++){dotsHtml+='<div class="trial-dot'+(i<u?' used':'')+'"></div>';}
+    dots.innerHTML=dotsHtml;
+  }
+}
 
-// ── PIECES ──
-function togglePiece(el){
-  el.classList.toggle('checked');
-  el.querySelector('.pt-box').textContent=el.classList.contains('checked')?'✓':'';
-  const count=document.querySelectorAll('.piece-toggle.checked').length;
+// ── PIÈCES ──
+function togglePiece(el){el.classList.toggle('checked');updatePiecesCount();}
+function updatePiecesCount(){
+  var count=document.querySelectorAll('.piece-toggle.checked').length;
   document.getElementById('piecesCountBadge').textContent=count+(count>1?' sélectionnées':' sélectionnée');
 }
-function getSelectedPieces(){var els=document.querySelectorAll('.piece-toggle.checked');var res=[];for(var i=0;i<els.length;i++){res.push(els[i].dataset.piece);}return res;}
+function getSelectedPieces(){
+  var els=document.querySelectorAll('.piece-toggle.checked');
+  var res=[];
+  for(var i=0;i<els.length;i++){res.push(els[i].dataset.piece);}
+  return res;
+}
 
 // ── GARANT ──
-let garantFiles=[];
+var garantFiles=[];
 function toggleGarant(){
-  const t=document.getElementById('garantToggle');
-  const f=document.getElementById('garantForm');
-  t.classList.toggle('open');
+  var t=document.getElementById('garantToggle');
+  var f=document.getElementById('garantForm');
+  t.classList.toggle('active');
   f.classList.toggle('show');
 }
-function handleGarantFiles(list){
-  for(var gi=0;gi<list.length;gi++){var gf=list[gi];var gfound=false;for(var gj=0;gj<garantFiles.length;gj++){if(garantFiles[gj].name===gf.name){gfound=true;break;}}if(!gfound)garantFiles.push(gf);}
-  renderGarantFiles();
-}
 function renderGarantFiles(){
-  document.getElementById('garantFileList').innerHTML=garantFiles.map(function(f,i){return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delGarantFile('+i+')">✕</button></div>';}).join('');
+  document.getElementById('garantFileList').innerHTML=garantFiles.map(function(f,i){
+    return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delGarantFile('+i+')">✕</button></div>';
+  }).join('');
 }
 function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
+function handleGarantFiles(list){
+  for(var gi=0;gi<list.length;gi++){
+    var gf=list[gi];var gfound=false;
+    for(var gj=0;gj<garantFiles.length;gj++){if(garantFiles[gj].name===gf.name){gfound=true;break;}}
+    if(!gfound)garantFiles.push(gf);
+  }
+  renderGarantFiles();
+}
 
-// ── FILES ──
-let files=[];
-const upZone=document.getElementById('upZone');
+// ── FICHIERS PRINCIPAL ──
+var files=[];
+var upZone=document.getElementById('upZone');
+upZone.addEventListener('click',function(){document.getElementById('fileInput').click();});
 upZone.addEventListener('dragover',function(e){e.preventDefault();upZone.classList.add('over');});
 upZone.addEventListener('dragleave',function(){upZone.classList.remove('over');});
 upZone.addEventListener('drop',function(e){e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
-function handleFiles(list){for(var i=0;i<list.length;i++){var f=list[i];var found=false;for(var j=0;j<files.length;j++){if(files[j].name===f.name){found=true;break;}}if(!found)files.push(f);}renderFiles();}
+function handleFiles(list){
+  for(var i=0;i<list.length;i++){
+    var f=list[i];var found=false;
+    for(var j=0;j<files.length;j++){if(files[j].name===f.name){found=true;break;}}
+    if(!found)files.push(f);
+  }
+  renderFiles();
+}
 function renderFiles(){
-  document.getElementById('fileList').innerHTML=files.map(function(f,i){return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delFile('+i+')">✕</button></div>';}).join('');
+  document.getElementById('fileList').innerHTML=files.map(function(f,i){
+    return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delFile('+i+')">✕</button></div>';
+  }).join('');
 }
 function delFile(i){files.splice(i,1);renderFiles();}
+
 function fileToBase64(file){
   return new Promise(function(resolve,reject){
-    const r=new FileReader();
+    var r=new FileReader();
     r.onload=function(){resolve(r.result.split(',')[1]);};
-    r.onerror=reject;
+    r.onerror=function(){reject(new Error('Lecture fichier échouée'));};
     r.readAsDataURL(file);
   });
 }
 
-// ── UI ──
-function showPage(p){
-  var pgs=document.querySelectorAll('.page');for(var i=0;i<pgs.length;i++){pgs[i].classList.remove('active');}
-  var nls=document.querySelectorAll('.nav-link');for(var i=0;i<nls.length;i++){nls[i].classList.remove('active');}
-  const pageMap={tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
-  const navMap={tool:'navTool',history:'navHistory',pricing:'navPricing'};
-  document.getElementById(pageMap[p]).classList.add('active');
-  document.getElementById(navMap[p]).classList.add('active');
-  if(p==='history')renderHistory();
+// ── NAVIGATION ──
+function showPage(page){
+  var pageMap={tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
+  var navMap={tool:'navTool',history:'navHistory',pricing:'navPricing'};
+  var pgs=document.querySelectorAll('.page');
+  for(var i=0;i<pgs.length;i++){pgs[i].classList.remove('active');}
+  var nls=document.querySelectorAll('.nav-link');
+  for(var i=0;i<nls.length;i++){nls[i].classList.remove('active');}
+  if(pageMap[page])document.getElementById(pageMap[page]).classList.add('active');
+  if(navMap[page])document.getElementById(navMap[page]).classList.add('active');
   window.scrollTo(0,0);
+  if(page==='history')renderHistory();
 }
-function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
-function showErr(msg){const e=document.getElementById('errBox');e.textContent='⚠️ '+msg;e.classList.add('show');}
 
 function copyLink(){
+  var btn=document.getElementById('copyBtn');
   navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(function(){
-    const btn=document.getElementById('copyBtn');
     btn.textContent='✓ Copié !';
     setTimeout(function(){btn.textContent='🔗 Copier';},2000);
-  });
+  }).catch(function(){btn.textContent='🔗 Copier';});
 }
 
 // ── PDF ──
-let lastResult=null,lastMeta=null;
-function downloadPDF(){
-  if(!lastResult||!lastMeta)return;
-  const {prenom,nom,loyer,type,adresse}=lastMeta;
-  const r=lastResult;
-  const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  const vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify '+prenom+' '+nom+'</title><style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}h1{font-size:1.6rem;}.score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}.g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}td:first-child{font-weight:600;background:#f5f5ff;width:40%;}.verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}.footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}</style></head><body><h1>'+prenom+' '+nom+'</h1><h2>'+type+'</h2><div class="score '+(r.score>=70?'g':r.score>=45?'o':'r')+'">'+r.score+'</div><h3>Indicateurs financiers</h3><table><tr><td>Revenus nets</td><td>'+r.revenus_nets+'</td></tr><tr><td>Taux d effort</td><td>'+r.taux_effort+'%</td></tr><tr><td>Contrat</td><td>'+r.type_contrat+'</td></tr><tr><td>Ancienneté</td><td>'+r.anciennete+'</td></tr></table><h3>Résumé</h3><p>'+r.resume+'</p><div class="verdict '+(r.score>=70?'g':r.score>=45?'o':'r')+' verdict"><strong>'+(vmap[r.verdict]||'Analyse')+'</strong><br/>'+r.verdict_detail+'</div><div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app</div></body></html>';
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='Lokify_'+prenom+'_'+nom+'.html';a.click();
+var lastResult=null,lastMeta=null;
+function generatePDF(){
+  var prenom=lastMeta.prenom,nom=lastMeta.nom,loyer=lastMeta.loyer,type=lastMeta.type,adresse=lastMeta.adresse;
+  var r=lastResult;
+  var tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
+  var vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
+  var sc=r.score>=70?'g':r.score>=45?'o':'r';
+  var piecesRows='';
+  for(var i=0;i<r.pieces.length;i++){
+    var p=r.pieces[i];
+    piecesRows+='<tr><td>'+p.nom+'</td><td>'+(tags[p.statut]||p.statut)+'</td></tr>';
+  }
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify '+prenom+' '+nom+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}'+
+    'h1{font-size:1.6rem;}.score-box{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}'+
+    '.g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}'+
+    'table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}td:first-child{font-weight:600;background:#f5f5ff;width:40%;}'+
+    '.verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}'+
+    '.footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}</style>'+
+    '</head><body>'+
+    '<h1>'+prenom+' '+nom+'</h1><h2>'+type+'</h2>'+
+    '<div class="score-box '+sc+'">'+r.score+'</div>'+
+    '<h3>Indicateurs financiers</h3>'+
+    '<table><tr><td>Revenus nets</td><td>'+r.revenus_nets+'</td></tr>'+
+    '<tr><td>Taux d effort</td><td>'+r.taux_effort+'%</td></tr>'+
+    '<tr><td>Contrat</td><td>'+r.type_contrat+'</td></tr>'+
+    '<tr><td>Ancienneté</td><td>'+r.anciennete+'</td></tr></table>'+
+    '<h3>Pièces</h3><table>'+piecesRows+'</table>'+
+    '<h3>Résumé</h3><p>'+r.resume+'</p>'+
+    '<div class="verdict '+sc+'"><strong>'+(vmap[r.verdict]||'Analyse')+'</strong><br/>'+r.verdict_detail+'</div>'+
+    '<div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app</div>'+
+    '</body></html>';
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='Lokify_'+prenom+'_'+nom+'.html';
+  a.click();
   URL.revokeObjectURL(url);
 }
 
-// ── ANALYZE ──
-const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
-let kTotal=0,kOk=0,kRes=0,kNok=0;
+// ── ANALYSE ──
+var loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification du taux d effort…','Génération du rapport…'];
+var kTotal=0,kOk=0,kRes=0,kNok=0;
 
-async function analyze(){
+function analyze(){
   if(!checkCredits())return;
-  const prenom=document.getElementById('fPrenom').value.trim();
-  const nom=document.getElementById('fNom').value.trim();
-  const loyer=document.getElementById('fLoyer').value;
-  const type=document.getElementById('fType').value;
-  const adresse=document.getElementById('fAdresse').value.trim();
-  const errBox=document.getElementById('errBox');
+  var prenom=document.getElementById('fPrenom').value.trim();
+  var nom=document.getElementById('fNom').value.trim();
+  var loyer=document.getElementById('fLoyer').value;
+  var type=document.getElementById('fType').value;
+  var adresse=document.getElementById('fAdresse').value.trim();
+  var errBox=document.getElementById('errBox');
   errBox.classList.remove('show');
   if(!prenom||!nom){showErr('Veuillez renseigner le prénom et le nom.');return;}
   if(!loyer||loyer<=0){showErr('Veuillez renseigner le montant du loyer.');return;}
-
-  const hasGarant=document.getElementById('garantForm').classList.contains('show');
-  const gPrenom=document.getElementById('gPrenom').value.trim();
-  const gNom=document.getElementById('gNom').value.trim();
-  const gLien=document.getElementById('gLien').value;
-  const gRevenus=document.getElementById('gRevenus').value;
-  const selectedPieces=getSelectedPieces();
-
+  var hasGarant=document.getElementById('garantForm').classList.contains('show');
+  var gPrenom=document.getElementById('gPrenom').value.trim();
+  var gNom=document.getElementById('gNom').value.trim();
+  var gLien=document.getElementById('gLien').value;
+  var gRevenus=document.getElementById('gRevenus').value;
+  var selectedPieces=getSelectedPieces();
   document.getElementById('emptyCard').style.display='none';
   document.getElementById('resultCard').classList.remove('show');
   document.getElementById('loaderCard').style.display='block';
   document.getElementById('btnAnalyze').disabled=true;
-
-  let si=0;
-  const sl=document.getElementById('loaderStep');
+  var si=0;
+  var sl=document.getElementById('loaderStep');
   sl.textContent=loadSteps[0];
   var iv=setInterval(function(){if(si<loadSteps.length-1)sl.textContent=loadSteps[++si];},800);
-
-  try{
-    var allFiles=[];for(var i=0;i<files.length;i++){allFiles.push(files[i]);}for(var i=0;i<garantFiles.length;i++){allFiles.push(garantFiles[i]);}
-    const msgContent=[];
-    for(const f of allFiles){
-      const data=await fileToBase64(f);
+  // Construire les fichiers
+  var allFiles=[];
+  for(var i=0;i<files.length;i++){allFiles.push(files[i]);}
+  for(var i=0;i<garantFiles.length;i++){allFiles.push(garantFiles[i]);}
+  // Convertir tous les fichiers en base64 puis envoyer
+  var msgContent=[];
+  var fileIndex=0;
+  function processNextFile(){
+    if(fileIndex>=allFiles.length){sendRequest();return;}
+    var f=allFiles[fileIndex];
+    fileIndex++;
+    fileToBase64(f).then(function(data){
       if(f.type==='application/pdf'||f.name.endsWith('.pdf')){
-        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data}});
+        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:data}});
       } else {
-        msgContent.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data}});
+        msgContent.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data:data}});
       }
-    }
-
-    var garantInfo=hasGarant&&gPrenom?'
-
-GARANT: '+gPrenom+' '+gNom+' ('+gLien+'), revenus déclarés: '+gRevenus+'€/mois.':'';
-    var piecesInfo='
-
-PIÈCES DEMANDÉES (vérifie uniquement celles-ci): '+selectedPieces.join(', ')+'.';
-
-    msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
-
-    const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
-    clearInterval(iv);
-    const apiResp=await resp.json();
-    if(apiResp.error)throw new Error('API: '+apiResp.error.message);
-    if(!apiResp.content||!apiResp.content[0])throw new Error('Pas de réponse: '+JSON.stringify(apiResp).substring(0,100));
-    const rawText=apiResp.content[0].text;
-    const jsonMatch=rawText.match(/\{[\s\S]*\}/);
-    if(!jsonMatch)throw new Error('Format invalide: '+rawText.substring(0,100));
-    const result=JSON.parse(jsonMatch[0]);
-
-    incrementUsed();
-    updateCreditsUI();
-    lastResult=result;
-    lastMeta={prenom,nom,loyer,type,adresse};
-
-    // Sauvegarder dans l'historique
-    addToHistory({
-      prenom,nom,loyer,type,adresse,
-      score:result.score,
-      taux_effort:result.taux_effort,
-      revenus_nets:result.revenus_nets,
-      type_contrat:result.type_contrat,
-      verdict:result.verdict
+      processNextFile();
+    }).catch(function(e){
+      clearInterval(iv);
+      finishError(e.message);
     });
-
-    document.getElementById('loaderCard').style.display='none';
-    document.getElementById('btnAnalyze').disabled=false;
-    showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
-
-    kTotal++;
-    if(result.verdict==='FAVORABLE')kOk++;
-    else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
-    else kNok++;
-    document.getElementById('kpiTotal').textContent=kTotal;
-    document.getElementById('kpiOk').textContent=kOk;
-    document.getElementById('kpiRes').textContent=kRes;
-    document.getElementById('kpiNok').textContent=kNok;
-
-    if(getRemaining()===0){setTimeout(function(){document.getElementById('upgradeModal').classList.add('show');},3000);}
-    if(result.verdict==='FAVORABLE'){setTimeout(function(){document.getElementById('sharePopup').classList.add('show');},2000);}
-
-  }catch(e){
-    clearInterval(iv);
+  }
+  function sendRequest(){
+    var garantInfo=hasGarant&&gPrenom?'\n\nGARANT: '+gPrenom+' '+gNom+' ('+gLien+'), revenus déclarés: '+gRevenus+'€/mois.':'';
+    var piecesInfo='\n\nPIÈCES DEMANDÉES (vérifie uniquement celles-ci): '+selectedPieces.join(', ')+'.';
+    msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
+    fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})})
+    .then(function(resp){return resp.json();})
+    .then(function(apiResp){
+      clearInterval(iv);
+      if(apiResp.error)throw new Error('API: '+apiResp.error.message);
+      if(!apiResp.content||!apiResp.content[0])throw new Error('Pas de réponse');
+      var rawText=apiResp.content[0].text;
+      var jsonMatch=rawText.match(/\{[\s\S]*\}/);
+      if(!jsonMatch)throw new Error('Format invalide');
+      var result=JSON.parse(jsonMatch[0]);
+      incrementUsed();
+      updateCreditsUI();
+      lastResult=result;
+      lastMeta={prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse};
+      addToHistory({prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
+      document.getElementById('loaderCard').style.display='none';
+      document.getElementById('btnAnalyze').disabled=false;
+      showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
+      kTotal++;
+      if(result.verdict==='FAVORABLE')kOk++;
+      else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
+      else kNok++;
+      document.getElementById('kpiTotal').textContent=kTotal;
+      document.getElementById('kpiOk').textContent=kOk;
+      document.getElementById('kpiRes').textContent=kRes;
+      document.getElementById('kpiNok').textContent=kNok;
+      if(getRemaining()===0){setTimeout(function(){document.getElementById('upgradeModal').classList.add('show');},3000);}
+      if(result.verdict==='FAVORABLE'){setTimeout(function(){document.getElementById('sharePopup').classList.add('show');},2000);}
+    })
+    .catch(function(e){
+      clearInterval(iv);
+      finishError(e.message);
+    });
+  }
+  function finishError(msg){
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('emptyCard').style.display='block';
     document.getElementById('btnAnalyze').disabled=false;
-    showErr('Erreur : '+e.message);
+    showErr('Erreur : '+msg);
   }
+  processNextFile();
+}
+
+function showErr(msg){
+  var b=document.getElementById('errBox');
+  b.textContent=msg;
+  b.classList.add('show');
 }
 
 function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
-  const srcTag=document.getElementById('sourceTag');
+  var srcTag=document.getElementById('sourceTag');
   srcTag.innerHTML=r.donnees_lues?'<div class="source-tag">✓ Données lues depuis les documents</div>':'<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>';
-  const ring=document.getElementById('scoreRing');
+  var ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
-  const e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
+  var e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
   document.getElementById('mRevenu').textContent=r.revenus_nets;
   document.getElementById('mRevenu').className='met-val '+ecls;
   document.getElementById('mEffort').textContent=r.taux_effort+'%';
@@ -1125,41 +1186,51 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('mContrat').textContent=r.type_contrat;
   document.getElementById('mContrat').className='met-val '+(r.type_contrat==='CDI'||r.type_contrat==='Fonctionnaire'?'g':r.type_contrat==='CDD'?'o':'');
   document.getElementById('mAnc').textContent=r.anciennete;
-  const fill=document.getElementById('effortFill');
+  var fill=document.getElementById('effortFill');
   setTimeout(function(){fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
-
-  const garantSection=document.getElementById('garantResultSection');
+  var garantSection=document.getElementById('garantResultSection');
   if(hasGarant&&r.garant_revenus){
     garantSection.style.display='block';
     document.getElementById('mGRevenu').textContent=r.garant_revenus;
     document.getElementById('mGCombine').textContent=r.revenus_combines||'—';
   } else {garantSection.style.display='none';}
-
-  const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  document.getElementById('piecesList').innerHTML=r.pieces.map(function(p){return '<div class="piece-row"><div class="pdot '+p.statut+'"></div><div class="pname">'+p.nom+'</div><div class="ptag '+p.statut+'">' +tags[p.statut]+'</div></div>';}).join('');
+  var tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
+  document.getElementById('piecesList').innerHTML=r.pieces.map(function(p){
+    return '<div class="piece-row"><div class="pdot '+p.statut+'"></div><div class="pname">'+p.nom+'</div><div class="ptag '+p.statut+'">'+tags[p.statut]+'</div></div>';
+  }).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
-
-  // Bloc anti-fraude
-  var fraudeSection = document.getElementById('fraudeSection');
-  var fs = r.fraude_score || 'FAIBLE';
-  var alertes = r.fraude_alertes || [];
-  fraudeSection.style.display = 'block';
-  var fsCls = fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
-  var fsIcon = fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
-  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:' + (alertes.length>0?'12px':'0') + '">';
-  html += '<span style="font-size:1.2rem;">' + fsIcon + '</span>';
-  html += '<span class="met-val ' + fsCls + '" style="font-size:0.9rem;">Risque ' + fs + '</span></div>';
-  if(alertes.length > 0){
-    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+  var fraudeSection=document.getElementById('fraudeSection');
+  var fs=r.fraude_score||'FAIBLE';
+  var alertes=r.fraude_alertes||[];
+  fraudeSection.style.display='block';
+  var fsCls=fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
+  var fsIcon=fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
+  var fHtml='<div style="display:flex;align-items:center;gap:10px;margin-bottom:'+(alertes.length>0?'12px':'0')+'">'+
+    '<span style="font-size:1.2rem;">'+fsIcon+'</span>'+
+    '<span class="met-val '+fsCls+'" style="font-size:0.9rem;">Risque '+fs+'</span></div>';
+  if(alertes.length>0){
+    fHtml+='<div style="display:flex;flex-direction:column;gap:6px;">';
     for(var i=0;i<alertes.length;i++){
-      html += '<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ ' + alertes[i] + '</div>';
+      fHtml+='<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ '+alertes[i]+'</div>';
     }
-    html += '</div>';
-  } else {
-    html += '<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>';
-  }
-  document.getElementById('fraudeContent').innerHTML = html;
-  const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
-  const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
+    fHtml+='</div>';
+  } else {fHtml+='<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>';}
+  document.getElementById('fraudeContent').innerHTML=fHtml;
+  var vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
+  var v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
-  document.getElementById('vIcon').textContent=v.i
+  document.getElementById('vIcon').textContent=v.icon;
+  document.getElementById('vLabel').textContent=v.lbl;
+  document.getElementById('vDetail').textContent=r.verdict_detail;
+  document.getElementById('resultCard').classList.add('show');
+}
+
+// ── INIT ──
+window.onload=function(){
+  updateCreditsUI();
+  renderHistory();
+};
+
+</script>
+</body>
+</html>
