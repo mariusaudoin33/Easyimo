@@ -535,8 +535,8 @@ footer small{font-size:11px;color:#888;}
             <div class="upload-icon-wrap">📎</div>
             <div class="upload-title">Déposer les documents</div>
             <div class="upload-hint">Glissez-déposez ou <span>parcourez</span> · PDF, JPG, PNG</div>
-            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)"/>
           </div>
+          <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;" onchange="handleFiles(this.files)"/>
           <div class="file-list" id="fileList"></div>
           <div class="sep"></div>
 
@@ -971,11 +971,7 @@ function handleGarantFiles(list){
 
 // ── FICHIERS PRINCIPAL ──
 var files=[];
-var upZone=document.getElementById('upZone');
-upZone.addEventListener('click',function(){document.getElementById('fileInput').click();});
-upZone.addEventListener('dragover',function(e){e.preventDefault();upZone.classList.add('over');});
-upZone.addEventListener('dragleave',function(){upZone.classList.remove('over');});
-upZone.addEventListener('drop',function(e){e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
+var upZone=null;
 function handleFiles(list){
   for(var i=0;i<list.length;i++){
     var f=list[i];var found=false;
@@ -1229,6 +1225,12 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
 window.onload=function(){
   updateCreditsUI();
   renderHistory();
+  upZone=document.getElementById('upZone');
+  if(upZone){
+    upZone.addEventListener('dragover',function(e){e.preventDefault();upZone.classList.add('over');});
+    upZone.addEventListener('dragleave',function(){upZone.classList.remove('over');});
+    upZone.addEventListener('drop',function(e){e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
+  }
 };
 
 
