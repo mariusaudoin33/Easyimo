@@ -1231,6 +1231,30 @@ window.onload=function(){
   renderHistory();
 };
 
+
+function closeModal(id){
+  var m=document.getElementById(id);
+  if(m)m.classList.remove('show');
+}
+function downloadPDF(){generatePDF();}
+function resetForm(){
+  document.getElementById('fPrenom').value='';
+  document.getElementById('fNom').value='';
+  document.getElementById('fLoyer').value='';
+  document.getElementById('fAdresse').value='';
+  files=[];renderFiles();
+  garantFiles=[];renderGarantFiles();
+  document.getElementById('resultCard').classList.remove('show');
+  document.getElementById('emptyCard').style.display='block';
+  document.getElementById('errBox').classList.remove('show');
+}
+function toggleFaq(btn){
+  var item=btn.parentElement;
+  var isOpen=item.classList.contains('open');
+  var allItems=document.querySelectorAll('.faq-item');
+  for(var i=0;i<allItems.length;i++){allItems[i].classList.remove('open');}
+  if(!isOpen)item.classList.add('open');
+}
 </script>
 </body>
 </html>
