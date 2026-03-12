@@ -1130,7 +1130,7 @@ function analyze(){
       if(!jsonMatch)throw new Error('Format invalide');
       var result=JSON.parse(jsonMatch[0]);
       incrementUsed();
-      updateCreditsUI();
+      try{updateCreditsUI();}catch(e){}
       lastResult=result;
       lastMeta={prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse};
       addToHistory({prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
