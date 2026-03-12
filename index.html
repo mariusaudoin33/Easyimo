@@ -685,7 +685,7 @@ footer small{font-size:11px;color:#888;}
     <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🛡️ <span>Conforme RGPD</span></div>
     <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🚫 <span>Documents non conservés</span></div>
     <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🤖 <span>Propulsé par Claude / Anthropic</span></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">📧 <a href="mailto:lokify.immo33@gmail.com" style="color:var(--violet);text-decoration:none;">lokify.immo33@gmail.com</a></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">📧 <a href="/cdn-cgi/l/email-protection#234f4c484a455a0d4a4e4e4c101063444e424a4f0d404c4e" style="color:var(--violet);text-decoration:none;"><span class="__cf_email__" data-cfemail="f69a999d9f908fd89f9b9b99c5c5b6919b979f9ad895999b">[email&#160;protected]</span></a></div>
     <div style="width:100%;text-align:center;font-size:0.68rem;color:var(--muted);margin-top:4px;">© 2025 Lokify · Tous droits réservés</div>
   </div>
 </div>
@@ -814,7 +814,7 @@ footer small{font-size:11px;color:#888;}
   </footer>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const PROXY_URL='/.netlify/functions/analyze';
 const MAX_FREE=5;
 const STORAGE_KEY='lokify_analyses_used';
@@ -870,7 +870,7 @@ function renderHistory(){
   if(data.length===0){
     container.innerHTML=`<div class="history-empty">
       <div class="es-icon">${all.length===0?'📋':'🔍'}</div>
-      <h3>${all.length===0?'Aucune analyse pour l\'instant':'Aucun résultat pour ce filtre'}</h3>
+      <h3>${all.length===0?'Aucune analyse pour l&#39;instant':'Aucun résultat pour ce filtre'}</h3>
       <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.'}</p>
       ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
     </div>`;
@@ -1209,7 +1209,4 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
-  document.getElementById('vIcon').textContent=v.icon;
-  document.getElementById('vTxt').innerHTML=`<strong>${v.lbl}</strong>${r.verdict_detail}`;
-  document.getElementById('resultCard').classList.add('show');
-  document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('vIcon').textContent=v.i
