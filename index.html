@@ -1120,23 +1120,33 @@ function analyze(){
     msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
     fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})})
-    .then(function(resp){return resp.json();})
+    .then(function(resp){
+      if(!resp.ok)throw new Error('Erreur réseau: '+resp.status);
+      return resp.json();
+    })
     .then(function(apiResp){
       clearInterval(iv);
-      if(apiResp.error)throw new Error('API: '+apiResp.error.message);
-      if(!apiResp.content||!apiResp.content[0])throw new Error('Pas de réponse');
-      var rawText=apiResp.content[0].text;
-      var jsonMatch=rawText.match(/\{[\s\S]*\}/);
-      if(!jsonMatch)throw new Error('Format invalide');
-      var result=JSON.parse(jsonMatch[0]);
-      incrementUsed();
-      try{updateCreditsUI();}catch(e){}
+      if(!apiResp)throw new Error('Réponse vide');
+      if(apiResp.error)throw new Error('API: '+(apiResp.error.message||JSON.stringify(apiResp.error)));
+      if(!apiResp.content||!apiResp.content[0])throw new Error('API dit: '+JSON.stringify(apiResp).substring(0,150));
+      var rawText=apiResp.content[0].text||'';
+      var result=null;
+      try{
+        var start=rawText.indexOf('{');
+        var end=rawText.lastIndexOf('}');
+        if(start===-1||end===-1)throw new Error('Pas de JSON');
+        result=JSON.parse(rawText.substring(start,end+1));
+      }catch(parseErr){
+        throw new Error('Parsing JSON: '+rawText.substring(0,80));
+      }
       lastResult=result;
       lastMeta={prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse};
-      addToHistory({prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
       document.getElementById('loaderCard').style.display='none';
       document.getElementById('btnAnalyze').disabled=false;
       showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
+      incrementUsed();
+      try{updateCreditsUI();}catch(e){}
+      addToHistory({prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
       kTotal++;
       if(result.verdict==='FAVORABLE')kOk++;
       else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
@@ -1217,9 +1227,10 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   var vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   var v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
-  document.getElementById('vIcon').textContent=v.icon;
-  document.getElementById('vLabel').textContent=v.lbl;
-  document.getElementById('vDetail').textContent=r.verdict_detail;
+  var vIcon=document.getElementById('vIcon');
+  var vTxt=document.getElementById('vTxt');
+  if(vIcon)vIcon.textContent=v.icon;
+  if(vTxt)vTxt.innerHTML='<strong>'+v.lbl+'</strong><br/>'+r.verdict_detail;
   document.getElementById('resultCard').classList.add('show');
 }
 
