@@ -814,7 +814,7 @@ footer small{font-size:11px;color:#888;}
   </footer>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 const PROXY_URL='/.netlify/functions/analyze';
 const MAX_FREE=5;
 const STORAGE_KEY='lokify_analyses_used';
@@ -854,54 +854,51 @@ function filterHistory(f){
 }
 
 function renderHistory(){
-  const all=getHistory();
-  const data=currentFilter==='all'?all:all.filter(e=>e.verdict===currentFilter);
-  const total=all.length,ok=all.filter(e=>e.verdict==='FAVORABLE').length,res=all.filter(e=>e.verdict==='FAVORABLE_RESERVE').length,nok=all.filter(e=>e.verdict==='DEFAVORABLE').length;
+  var all=getHistory();
+  var data=currentFilter==='all'?all:all.filter(function(e){return e.verdict===currentFilter;});
+  var total=all.length;
+  var ok=all.filter(function(e){return e.verdict==='FAVORABLE';}).length;
+  var res=all.filter(function(e){return e.verdict==='FAVORABLE_RESERVE';}).length;
+  var nok=all.filter(function(e){return e.verdict==='DEFAVORABLE';}).length;
 
-  // Stats
-  document.getElementById('historyStats').innerHTML=`
-    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">Total analysés</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--green)">${ok}</div><div class="kpi-label">Favorables</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--orange)">${res}</div><div class="kpi-label">Avec réserves</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--red)">${nok}</div><div class="kpi-label">Défavorables</div></div>
-  `;
+  document.getElementById('historyStats').innerHTML=
+    '<div class="kpi"><div class="kpi-val">'+total+'</div><div class="kpi-label">Total analysés</div></div>'+
+    '<div class="kpi"><div class="kpi-val" style="color:var(--green)">'+ok+'</div><div class="kpi-label">Favorables</div></div>'+
+    '<div class="kpi"><div class="kpi-val" style="color:var(--orange)">'+res+'</div><div class="kpi-label">Avec réserves</div></div>'+
+    '<div class="kpi"><div class="kpi-val" style="color:var(--red)">'+nok+'</div><div class="kpi-label">Défavorables</div></div>';
 
-  const container=document.getElementById('historyContent');
+  var container=document.getElementById('historyContent');
   if(data.length===0){
-    container.innerHTML=`<div class="history-empty">
-      <div class="es-icon">${all.length===0?'📋':'🔍'}</div>
-      <h3>${all.length===0?'Aucune analyse pour l&#39;instant':'Aucun résultat pour ce filtre'}</h3>
-      <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.'}</p>
-      ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
-    </div>`;
+    var emptyBtn=all.length===0?'<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>':'';
+    container.innerHTML='<div class="history-empty">'+
+      '<div class="es-icon">'+(all.length===0?'📋':'🔍')+'</div>'+
+      '<h3>'+(all.length===0?'Aucune analyse pour l instant':'Aucun résultat pour ce filtre')+'</h3>'+
+      '<p>'+(all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.')+'</p>'+
+      emptyBtn+'</div>';
     return;
   }
-
-  const vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
-  container.innerHTML=`
-    <div class="history-table">
-      <div class="history-table-head">
-        <span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span>
-      </div>
-      ${data.map(e=>{
-        const v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
-        const scoreCls=e.score>=70?'g':e.score>=45?'o':'r';
-        const effortCls=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
-        return `<div class="history-row">
-          <div class="hr-name">${e.prenom} ${e.nom}</div>
-          <div class="hr-prop">${e.type} · ${parseInt(e.loyer).toLocaleString('fr-FR')}€/mois${e.adresse?' · '+e.adresse:''}</div>
-          <div class="hr-score ${scoreCls}">${e.score}</div>
-          <div class="hr-effort met-val ${effortCls}">${e.taux_effort}%</div>
-          <div><span class="verdict-badge ${v.cls}">${v.icon} ${v.label}</span></div>
-          <div class="hr-date">${e.date}</div>
-          <div><button class="hr-del" onclick="deleteFromHistory(${e.id})" title="Supprimer">🗑️</button></div>
-        </div>`;
-      }).join('')}
-    </div>
-  `;
+  var vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
+  var rows='';
+  for(var i=0;i<data.length;i++){
+    var e=data[i];
+    var v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
+    var sc=e.score>=70?'g':e.score>=45?'o':'r';
+    var ec=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
+    rows+='<div class="history-row">'+
+      '<div class="hr-name">'+e.prenom+' '+e.nom+'</div>'+
+      '<div class="hr-prop">'+e.type+' · '+parseInt(e.loyer).toLocaleString('fr-FR')+'€/mois'+(e.adresse?' · '+e.adresse:'')+'</div>'+
+      '<div class="hr-score '+sc+'">'+e.score+'</div>'+
+      '<div class="hr-effort met-val '+ec+'">'+e.taux_effort+'%</div>'+
+      '<div><span class="verdict-badge '+v.cls+'">'+v.icon+' '+v.label+'</span></div>'+
+      '<div class="hr-date">'+e.date+'</div>'+
+      '<div><button class="hr-del" onclick="deleteFromHistory('+e.id+')" title="Supprimer">🗑️</button></div>'+
+    '</div>';
+  }
+  container.innerHTML='<div class="history-table">'+
+    '<div class="history-table-head"><span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span></div>'+
+    rows+'</div>';
 }
 
-// ── CREDITS ──
 function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
 function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
@@ -912,12 +909,12 @@ function updateCreditsUI(){
   const title=document.getElementById('trialTitle');
   const dots=document.getElementById('trialDots');
   const banner=document.getElementById('trialBanner');
-  text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
+  text.textContent=r===0?'Passer à Pro':(r>1?r+' analyses gratuites':r+' analyse gratuite');
   badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
   if(r===0){banner.style.background='var(--red-light)';banner.style.borderColor='#f5c6c2';title.textContent='Analyses gratuites épuisées';title.style.color='var(--red)';}
-  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;title.style.color='#b45309';}
-  else{title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;title.style.color='';}
-  dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
+  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent='Plus que '+r+(r>1?' analyses gratuites':' analyse gratuite');title.style.color='#b45309';}
+  else{title.textContent=(r>1?r+' analyses gratuites restantes':r+' analyse gratuite restante');title.style.color='';}
+  dots.innerHTML=Array.from({length:MAX_FREE},function(_,i){return '<div class="trial-dot'+(i<u?' used':'')+'"></div>';}).join('');
 }
 function checkCredits(){if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}return true;}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
@@ -928,7 +925,7 @@ function togglePiece(el){
   el.classList.toggle('checked');
   el.querySelector('.pt-box').textContent=el.classList.contains('checked')?'✓':'';
   const count=document.querySelectorAll('.piece-toggle.checked').length;
-  document.getElementById('piecesCountBadge').textContent=`${count} sélectionnée${count>1?'s':''}`;
+  document.getElementById('piecesCountBadge').textContent=count+(count>1?' sélectionnées':' sélectionnée');
 }
 function getSelectedPieces(){return [...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
 
@@ -945,10 +942,7 @@ function handleGarantFiles(list){
   renderGarantFiles();
 }
 function renderGarantFiles(){
-  document.getElementById('garantFileList').innerHTML=garantFiles.map((f,i)=>`
-    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
-    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
-    <button class="file-del" onclick="delGarantFile(${i})">✕</button></div>`).join('');
+  document.getElementById('garantFileList').innerHTML=garantFiles.map(function(f,i){return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delGarantFile('+i+')">✕</button></div>';}).join('');
 }
 function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
 
@@ -960,10 +954,7 @@ upZone.addEventListener('dragleave',()=>upZone.classList.remove('over'));
 upZone.addEventListener('drop',e=>{e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
 function handleFiles(list){[...list].forEach(f=>{if(!files.find(x=>x.name===f.name))files.push(f);});renderFiles();}
 function renderFiles(){
-  document.getElementById('fileList').innerHTML=files.map((f,i)=>`
-    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
-    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
-    <button class="file-del" onclick="delFile(${i})">✕</button></div>`).join('');
+  document.getElementById('fileList').innerHTML=files.map(function(f,i){return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delFile('+i+')">✕</button></div>';}).join('');
 }
 function delFile(i){files.splice(i,1);renderFiles();}
 function fileToBase64(file){
@@ -1005,37 +996,11 @@ function downloadPDF(){
   const r=lastResult;
   const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
   const vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify — ${prenom} ${nom}</title>
-  <style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}
-  h1{font-size:1.6rem;margin-bottom:4px;}h2{font-size:1rem;color:#6b7280;font-weight:normal;margin-bottom:24px;}
-  .score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}
-  .g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}
-  table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}
-  td:first-child{font-weight:600;background:#f5f5ff;width:40%;}
-  .verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}
-  .footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}
-  </style></head><body>
-  <h1>${prenom} ${nom}</h1>
-  <h2>${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois</h2>
-  <div class="score ${r.score>=70?'g':r.score>=45?'o':'r'}">${r.score}</div>
-  <h3>Indicateurs financiers</h3>
-  <table><tr><td>Revenus nets réels</td><td>${r.revenus_nets}</td></tr>
-  <tr><td>Taux d'effort</td><td>${r.taux_effort}%</td></tr>
-  <tr><td>Type de contrat</td><td>${r.type_contrat}</td></tr>
-  <tr><td>Ancienneté</td><td>${r.anciennete}</td></tr>
-  ${r.garant_revenus?`<tr><td>Revenus garant</td><td>${r.garant_revenus}</td></tr><tr><td>Revenus combinés</td><td>${r.revenus_combines}</td></tr>`:''}
-  </table>
-  <h3>Pièces du dossier</h3>
-  <table>${r.pieces.map(p=>`<tr><td>${p.nom}</td><td>${tags[p.statut]}</td></tr>`).join('')}</table>
-  <h3>Résumé du profil</h3><p style="font-size:0.85rem;line-height:1.7;">${r.resume}</p>
-  <div class="verdict ${r.score>=70?'g':r.score>=45?'o':'r'} verdict"><strong>${vmap[r.verdict]||'Analyse complète'}</strong><br/>${r.verdict_detail}</div>
-  <div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app · Propulsé par Claude / Anthropic<br/>
-  Ce rapport est un outil d'aide à la décision. La décision finale appartient à l'agence.</div>
-  </body></html>`;
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify '+prenom+' '+nom+'</title><style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}h1{font-size:1.6rem;}.score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}.g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}td:first-child{font-weight:600;background:#f5f5ff;width:40%;}.verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}.footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}</style></head><body><h1>'+prenom+' '+nom+'</h1><h2>'+type+'</h2><div class="score '+(r.score>=70?'g':r.score>=45?'o':'r')+'">'+r.score+'</div><h3>Indicateurs financiers</h3><table><tr><td>Revenus nets</td><td>'+r.revenus_nets+'</td></tr><tr><td>Taux d effort</td><td>'+r.taux_effort+'%</td></tr><tr><td>Contrat</td><td>'+r.type_contrat+'</td></tr><tr><td>Ancienneté</td><td>'+r.anciennete+'</td></tr></table><h3>Résumé</h3><p>'+r.resume+'</p><div class="verdict '+(r.score>=70?'g':r.score>=45?'o':'r')+' verdict"><strong>'+(vmap[r.verdict]||'Analyse')+'</strong><br/>'+r.verdict_detail+'</div><div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app</div></body></html>';
   const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download=`Lokify_${prenom}_${nom}.html`;a.click();
+  a.href=url;a.download='Lokify_'+prenom+'_'+nom+'.html';a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -1084,25 +1049,14 @@ async function analyze(){
       }
     }
 
-    const garantInfo=hasGarant&&gPrenom?`\n\nGARANT: ${gPrenom} ${gNom} (${gLien}), revenus déclarés: ${gRevenus}€/mois. Les documents du garant sont inclus. Vérifie que le nom du garant correspond à sa pièce d'identité.`:'';
-    const piecesInfo=`\n\nPIÈCES DEMANDÉES PAR L'AGENCE (vérifie uniquement celles-ci): ${selectedPieces.join(', ')}.`;
+    var garantInfo=hasGarant&&gPrenom?'
 
-    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.${garantInfo}${piecesInfo}
+GARANT: '+gPrenom+' '+gNom+' ('+gLien+'), revenus déclarés: '+gRevenus+'€/mois.':'';
+    var piecesInfo='
 
-IMPORTANT: Vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le dans le resume et mets le verdict à DEFAVORABLE.
+PIÈCES DEMANDÉES (vérifie uniquement celles-ci): '+selectedPieces.join(', ')+'.';
 
-Lis attentivement tous les documents et extrais les vraies données.
-
-ANALYSE ANTI-FRAUDE OBLIGATOIRE - Vérifie les points suivants sur chaque fiche de paie :
-1. Cohérence des montants : salaire brut, cotisations et salaire net doivent être mathématiquement cohérents
-2. Dates : la date de paiement ne doit pas tomber un weekend ou jour férié
-3. Typographie : polices, alignements et espacements doivent être homogènes (anomalie = possible modification)
-4. Numéros : SIRET (14 chiffres), numéro de sécurité sociale (15 chiffres) doivent être valides en format
-5. Cohérence du salaire : le salaire doit être cohérent avec le poste et le secteur mentionnés
-6. Répétitions suspectes : détecter si le même document semble réutilisé avec des modifications
-
-Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
-{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true,"fraude_score":"FAIBLE","fraude_alertes":["Exemple alerte si détectée"]}`});
+    msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
 
     const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
@@ -1159,7 +1113,7 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
   const srcTag=document.getElementById('sourceTag');
-  srcTag.innerHTML=r.donnees_lues?`<div class="source-tag">✓ Données lues depuis les documents</div>`:`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
+  srcTag.innerHTML=r.donnees_lues?'<div class="source-tag">✓ Données lues depuis les documents</div>':'<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>';
   const ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
@@ -1182,8 +1136,7 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   } else {garantSection.style.display='none';}
 
   const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
-    <div class="piece-row"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
+  document.getElementById('piecesList').innerHTML=r.pieces.map(function(p){return '<div class="piece-row"><div class="pdot '+p.statut+'"></div><div class="pname">'+p.nom+'</div><div class="ptag '+p.statut+'">' +tags[p.statut]+'</div></div>';}).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
 
   // Bloc anti-fraude
