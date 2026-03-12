@@ -915,15 +915,13 @@ function updateCreditsUI(){
   var dots=document.getElementById('trialDots');
   var banner=document.getElementById('trialBanner');
   if(r===0){
-    badge.textContent='Pro requis';
-    badge.className='credits-badge used';
-    text.textContent='Passer à Pro';
+    if(badge){badge.textContent='Pro requis';badge.className='credits-badge used';}
+    if(text)text.textContent='Passer à Pro';
     if(banner)banner.className='trial-banner used';
     if(title)title.textContent='Limite atteinte';
   } else {
-    badge.textContent=r+' analyse'+(r>1?'s':'')+' gratuite'+(r>1?'s':'');
-    badge.className='credits-badge';
-    text.textContent=(r>1?r+' analyses gratuites':r+' analyse gratuite');
+    if(badge){badge.textContent=r+' analyse'+(r>1?'s':'')+' gratuite'+(r>1?'s':'');badge.className='credits-badge';}
+    if(text)text.textContent=(r>1?r+' analyses gratuites':r+' analyse gratuite');
     if(title)title.textContent=(r>1?r+' analyses gratuites restantes':r+' analyse gratuite restante');
   }
   if(dots){
@@ -955,7 +953,9 @@ function toggleGarant(){
   f.classList.toggle('show');
 }
 function renderGarantFiles(){
-  document.getElementById('garantFileList').innerHTML=garantFiles.map(function(f,i){
+  var el=document.getElementById('garantFileList');
+  if(!el)return;
+  el.innerHTML=garantFiles.map(function(f,i){
     return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delGarantFile('+i+')">✕</button></div>';
   }).join('');
 }
@@ -981,7 +981,9 @@ function handleFiles(list){
   renderFiles();
 }
 function renderFiles(){
-  document.getElementById('fileList').innerHTML=files.map(function(f,i){
+  var el=document.getElementById('fileList');
+  if(!el)return;
+  el.innerHTML=files.map(function(f,i){
     return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delFile('+i+')">✕</button></div>';
   }).join('');
 }
@@ -1222,16 +1224,21 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
 }
 
 // ── INIT ──
-window.onload=function(){
-  updateCreditsUI();
-  renderHistory();
+function initApp(){
+  try{updateCreditsUI();}catch(e){}
+  try{renderHistory();}catch(e){}
   upZone=document.getElementById('upZone');
   if(upZone){
     upZone.addEventListener('dragover',function(e){e.preventDefault();upZone.classList.add('over');});
     upZone.addEventListener('dragleave',function(){upZone.classList.remove('over');});
     upZone.addEventListener('drop',function(e){e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
   }
-};
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',initApp);
+} else {
+  initApp();
+}
 
 
 function closeModal(id){
