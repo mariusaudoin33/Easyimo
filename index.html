@@ -203,7 +203,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .anthropic-badge{background:#fffbeb;border-color:#fde68a;}
 .anthropic-badge .trust-text strong{color:#92400e;}
 
-/* SHARE MODAL */
+/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(12,11,30,0.72);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.show{display:flex;}
 .modal{background:var(--white);border-radius:24px;max-width:900px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);}
@@ -237,6 +237,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .mplan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .mplan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
 .modal-footer{text-align:center;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
+
+/* RESET CREDITS BTN */
+.reset-credits-wrap{text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-reset-credits{background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.btn-reset-credits:hover{border-color:var(--violet);color:var(--violet);}
 
 /* SHARE POPUP */
 .share-popup-wrap{position:fixed;bottom:32px;right:32px;z-index:300;display:none;animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);}
@@ -462,6 +467,10 @@ footer small{font-size:11px;color:#888;}
         <span>🔒 Paiement sécurisé</span>
         <span>🛡️ 14 jours satisfait ou remboursé</span>
         <span>❌ Sans engagement</span>
+      </div>
+      <!-- BOUTON RESET CREDITS -->
+      <div class="reset-credits-wrap">
+        <button class="btn-reset-credits" onclick="resetCredits()">🔄 Réinitialiser mes analyses gratuites</button>
       </div>
     </div>
   </div>
@@ -694,9 +703,7 @@ footer small{font-size:11px;color:#888;}
         <button class="btn-danger" onclick="clearHistory()">🗑️ Tout effacer</button>
       </div>
     </div>
-
     <div class="history-stats" id="historyStats"></div>
-
     <div id="historyContent"></div>
   </div>
 </div>
@@ -808,28 +815,16 @@ const HISTORY_KEY='lokify_history';
 
 // ── HISTORIQUE ──
 function getHistory(){
-  try{
-    const raw=localStorage.getItem(HISTORY_KEY);
-    return raw?JSON.parse(raw):[];
-  }catch(e){return[];}
+  try{const raw=localStorage.getItem(HISTORY_KEY);return raw?JSON.parse(raw):[];}catch(e){return[];}
 }
-function saveHistory(h){
-  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}
-}
+function saveHistory(h){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}}
 function addToHistory(entry){
   const h=getHistory();
   h.unshift({...entry,id:Date.now(),date:new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
-  saveHistory(h);
-  renderHistory();
+  saveHistory(h);renderHistory();
 }
-function deleteFromHistory(id){
-  const h=getHistory().filter(e=>e.id!==id);
-  saveHistory(h);
-  renderHistory();
-}
-function clearHistory(){
-  if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}
-}
+function deleteFromHistory(id){const h=getHistory().filter(e=>e.id!==id);saveHistory(h);renderHistory();}
+function clearHistory(){if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}}
 
 let currentFilter='all';
 function filterHistory(f){
@@ -838,20 +833,16 @@ function filterHistory(f){
   document.getElementById('filter'+(f==='all'?'All':f==='FAVORABLE'?'Fav':f==='FAVORABLE_RESERVE'?'Res':'Nok')).classList.add('active');
   renderHistory();
 }
-
 function renderHistory(){
   const all=getHistory();
   const data=currentFilter==='all'?all:all.filter(e=>e.verdict===currentFilter);
   const total=all.length,ok=all.filter(e=>e.verdict==='FAVORABLE').length,res=all.filter(e=>e.verdict==='FAVORABLE_RESERVE').length,nok=all.filter(e=>e.verdict==='DEFAVORABLE').length;
-
-  // Stats
   document.getElementById('historyStats').innerHTML=`
     <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">Total analysés</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--green)">${ok}</div><div class="kpi-label">Favorables</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--orange)">${res}</div><div class="kpi-label">Avec réserves</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--red)">${nok}</div><div class="kpi-label">Défavorables</div></div>
   `;
-
   const container=document.getElementById('historyContent');
   if(data.length===0){
     container.innerHTML=`<div class="history-empty">
@@ -859,16 +850,12 @@ function renderHistory(){
       <h3>${all.length===0?'Aucune analyse pour l\'instant':'Aucun résultat pour ce filtre'}</h3>
       <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.'}</p>
       ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
-    </div>`;
-    return;
+    </div>`;return;
   }
-
   const vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
   container.innerHTML=`
     <div class="history-table">
-      <div class="history-table-head">
-        <span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span>
-      </div>
+      <div class="history-table-head"><span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span></div>
       ${data.map(e=>{
         const v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
         const scoreCls=e.score>=70?'g':e.score>=45?'o':'r';
@@ -883,14 +870,15 @@ function renderHistory(){
           <div><button class="hr-del" onclick="deleteFromHistory(${e.id})" title="Supprimer">🗑️</button></div>
         </div>`;
       }).join('')}
-    </div>
-  `;
+    </div>`;
 }
 
 // ── CREDITS ──
 function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
 function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
+
+// ✅ CORRECTIF : ne plus ouvrir la modale au chargement
 function updateCreditsUI(){
   const r=getRemaining(),u=getUsed();
   const badge=document.getElementById('creditsBadge');
@@ -900,14 +888,43 @@ function updateCreditsUI(){
   const banner=document.getElementById('trialBanner');
   text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
   badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
-  if(r===0){banner.style.background='var(--red-light)';banner.style.borderColor='#f5c6c2';title.textContent='Analyses gratuites épuisées';title.style.color='var(--red)';}
-  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;title.style.color='#b45309';}
-  else{title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;title.style.color='';}
+  if(r===0){
+    banner.style.background='var(--red-light)';
+    banner.style.borderColor='#f5c6c2';
+    title.textContent='Analyses gratuites épuisées';
+    title.style.color='var(--red)';
+  } else if(r<=2){
+    banner.style.background='#fff8e1';
+    banner.style.borderColor='#ffe082';
+    title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
+    title.style.color='#b45309';
+  } else {
+    title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;
+    title.style.color='';
+  }
   dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
 }
-function checkCredits(){if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}return true;}
+
+// ✅ CORRECTIF : la modale ne s'ouvre QUE quand on clique sur Analyser
+function checkCredits(){
+  if(getRemaining()===0){
+    document.getElementById('upgradeModal').classList.add('show');
+    return false;
+  }
+  return true;
+}
+
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
+
+// ✅ NOUVEAU : bouton pour réinitialiser les crédits
+function resetCredits(){
+  if(confirm('Réinitialiser le compteur d\'analyses gratuites ? (5 nouvelles analyses disponibles)')){
+    try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
+    updateCreditsUI();
+    closeModal('upgradeModal');
+  }
+}
 
 // ── PIECES ──
 function togglePiece(el){
@@ -916,20 +933,16 @@ function togglePiece(el){
   const count=document.querySelectorAll('.piece-toggle.checked').length;
   document.getElementById('piecesCountBadge').textContent=`${count} sélectionnée${count>1?'s':''}`;
 }
-function getSelectedPieces(){return [...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
+function getSelectedPieces(){return[...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
 
 // ── GARANT ──
 let garantFiles=[];
 function toggleGarant(){
   const t=document.getElementById('garantToggle');
   const f=document.getElementById('garantForm');
-  t.classList.toggle('open');
-  f.classList.toggle('show');
+  t.classList.toggle('open');f.classList.toggle('show');
 }
-function handleGarantFiles(list){
-  [...list].forEach(f=>{if(!garantFiles.find(x=>x.name===f.name))garantFiles.push(f);});
-  renderGarantFiles();
-}
+function handleGarantFiles(list){[...list].forEach(f=>{if(!garantFiles.find(x=>x.name===f.name))garantFiles.push(f);});renderGarantFiles();}
 function renderGarantFiles(){
   document.getElementById('garantFileList').innerHTML=garantFiles.map((f,i)=>`
     <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
@@ -974,7 +987,6 @@ function showPage(p){
 }
 function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
 function showErr(msg){const e=document.getElementById('errBox');e.textContent='⚠️ '+msg;e.classList.add('show');}
-
 function copyLink(){
   navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(()=>{
     const btn=document.getElementById('copyBtn');
@@ -1070,15 +1082,13 @@ async function analyze(){
       }
     }
 
-    const garantInfo=hasGarant&&gPrenom?`\n\nGARANT: ${gPrenom} ${gNom} (${gLien}), revenus déclarés: ${gRevenus}€/mois. Les documents du garant sont inclus. Vérifie que le nom du garant correspond à sa pièce d'identité.`:'';
-    const piecesInfo=`\n\nPIÈCES DEMANDÉES PAR L'AGENCE (vérifie uniquement celles-ci): ${selectedPieces.join(', ')}.`;
+    const garantInfo=hasGarant&&gPrenom?`\n\nGARANT: ${gPrenom} ${gNom} (${gLien}), revenus déclarés: ${gRevenus}€/mois. Les documents du garant sont inclus.`:'';
+    const piecesInfo=`\n\nPIÈCES DEMANDÉES: ${selectedPieces.join(', ')}.`;
 
     msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.${garantInfo}${piecesInfo}
 
-IMPORTANT: Vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le dans le resume et mets le verdict à DEFAVORABLE.
-
 Lis attentivement tous les documents et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
-{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
 
     const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
@@ -1096,15 +1106,7 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
     lastResult=result;
     lastMeta={prenom,nom,loyer,type,adresse};
 
-    // Sauvegarder dans l'historique
-    addToHistory({
-      prenom,nom,loyer,type,adresse,
-      score:result.score,
-      taux_effort:result.taux_effort,
-      revenus_nets:result.revenus_nets,
-      type_contrat:result.type_contrat,
-      verdict:result.verdict
-    });
+    addToHistory({prenom,nom,loyer,type,adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
 
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('btnAnalyze').disabled=false;
@@ -1119,6 +1121,7 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
     document.getElementById('kpiRes').textContent=kRes;
     document.getElementById('kpiNok').textContent=kNok;
 
+    // ✅ CORRECTIF : modale s'affiche seulement APRÈS analyse si crédits épuisés
     if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
     if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
 
@@ -1182,9 +1185,8 @@ function resetForm(){
   lastResult=null;lastMeta=null;
 }
 
-// Init
+// Init — ✅ plus d'ouverture automatique de la modale
 updateCreditsUI();
 </script>
-
 </body>
 </html>
