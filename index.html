@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lokify — Dossiers locataires analysés en 30 sec</title>
+<title>Lokify — Analyse de dossiers locataires par IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
@@ -442,7 +442,7 @@ footer small{font-size:11px;color:#888;}
             <li><span class="mcheck">✓</span>Comparaison de candidats</li>
             <li><span class="mcheck">✓</span>Support prioritaire</li>
           </ul>
-          <a href="/cdn-cgi/l/email-protection#4a262521232c33642327272579790a2d272b23266429252775393f28202f293e770b282524242f272f243e6f787a062521232c336f787a1a38256c28252e337708252420253f386f78096f787a202f6f787a39253f222b233e2f6f787a39253f39293823382f6f787a89ea6f787a062521232c336f787a1a382564" style='display:block;width:100%;padding:11px;border-radius:9px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.82rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
+          <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:block;width:100%;padding:11px;border-radius:9px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.82rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
         </div>
         <div class="mplan">
           <div class="mplan-name">Réseau</div>
@@ -490,7 +490,6 @@ footer small{font-size:11px;color:#888;}
       <h1>Analyse de dossier locataire</h1>
       <p>Uploadez les documents du candidat et recevez immédiatement un score de solvabilité.</p>
     </div>
-    <div style="margin-bottom:16px;"><button onclick="showPage('history')" style="width:100%;background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:12px 20px;font-family:Instrument Sans,sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">📋 Voir l'historique des analyses</button></div>
     <div class="kpi-row">
       <div class="kpi"><div class="kpi-val" id="kpiTotal">0</div><div class="kpi-label">Dossiers analysés</div></div>
       <div class="kpi"><div class="kpi-val" style="color:var(--green)" id="kpiOk">0</div><div class="kpi-label">Favorables</div></div>
@@ -535,8 +534,8 @@ footer small{font-size:11px;color:#888;}
             <div class="upload-icon-wrap">📎</div>
             <div class="upload-title">Déposer les documents</div>
             <div class="upload-hint">Glissez-déposez ou <span>parcourez</span> · PDF, JPG, PNG</div>
+            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFiles(this.files)"/>
           </div>
-          <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;" onchange="handleFiles(this.files)"/>
           <div class="file-list" id="fileList"></div>
           <div class="sep"></div>
 
@@ -654,10 +653,6 @@ footer small{font-size:11px;color:#888;}
               <div class="v-txt" id="vTxt"></div>
             </div>
           </div>
-          <div class="rs" id="fraudeSection" style="display:none;">
-            <div class="sec-title">🔍 Détection de fraude</div>
-            <div id="fraudeContent"></div>
-          </div>
           <div class="res-actions">
             <button class="btn-pdf" onclick="downloadPDF()">📄 Télécharger PDF</button>
             <button class="btn-sec" onclick="window.print()">🖨️ Imprimer</button>
@@ -678,15 +673,6 @@ footer small{font-size:11px;color:#888;}
         </div>
       </div>
     </div>
-  </div>
-  <!-- Footer RGPD page principale -->
-  <div style="border-top:1px solid var(--border);margin-top:40px;padding:24px 24px 40px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1160px;margin-left:auto;margin-right:auto;">
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🔒 <span>Données chiffrées HTTPS</span></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🛡️ <span>Conforme RGPD</span></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🚫 <span>Documents non conservés</span></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">🤖 <span>Propulsé par Claude / Anthropic</span></div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted);">📧 <a href="/cdn-cgi/l/email-protection#234f4c484a455a0d4a4e4e4c101063444e424a4f0d404c4e" style="color:var(--violet);text-decoration:none;"><span class="__cf_email__" data-cfemail="f69a999d9f908fd89f9b9b99c5c5b6919b979f9ad895999b">[email&#160;protected]</span></a></div>
-    <div style="width:100%;text-align:center;font-size:0.68rem;color:var(--muted);margin-top:4px;">© 2025 Lokify · Tous droits réservés</div>
   </div>
 </div>
 
@@ -752,7 +738,7 @@ footer small{font-size:11px;color:#888;}
           <li><span class="feat-check">✓</span>Alerte dossiers incomplets</li>
           <li><span class="feat-check">✓</span>Support prioritaire</li>
         </ul>
-        <a href="/cdn-cgi/l/email-protection#5d313236343b2473343030326e6e1d3a303c3431733e3230622e283f37383e29601c3f3233333830383329786f6d113236343b24786f6d0d2f327b3f323924601f32333732282f786f1e786f6d3738786f6d2e3228353c342938786f6d2e32282e3e2f342f38786f6d9efd786f6d113236343b24786f6d0d2f3273" style='display:block;width:100%;padding:13px;border-radius:10px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.88rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
+        <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:block;width:100%;padding:13px;border-radius:10px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.88rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
       </div>
       <div class="plan">
         <div class="plan-name">Réseau</div>
@@ -776,7 +762,7 @@ footer small{font-size:11px;color:#888;}
       <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité dès l'ouverture.</p>
       <div class="waitlist-form">
         <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr"/>
-        <a href="/cdn-cgi/l/email-protection#29454642404f5007404444461a1a694e44484045074a4644165a5c4b434c4a5d14684b4647474c444c475d0c1b19654642404f500c1b19795b460f4b464d50146b464743465c5b0c1b6a0c1b19434c0c1b195a465c4148405d4c0c1b195a465c5a4a5b405b4c0c1b19ea890c1b19654642404f500c1b19795b4607" style='display:inline-block;background:var(--violet);color:#fff;border-radius:10px;padding:12px 20px;font-family:Instrument Sans,sans-serif;font-size:0.85rem;font-weight:700;text-decoration:none;white-space:nowrap;'>✉️ Nous contacter</a>
+        <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:inline-block;background:var(--violet);color:#fff;border-radius:10px;padding:12px 20px;font-family:Instrument Sans,sans-serif;font-size:0.85rem;font-weight:700;text-decoration:none;white-space:nowrap;'>✉️ Nous contacter</a>
       </div>
       <div class="waitlist-note">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
     </div>
@@ -809,36 +795,35 @@ footer small{font-size:11px;color:#888;}
     </div>
   </div>
   <footer>
-    <p>📧 Contact : <a href="/cdn-cgi/l/email-protection#630f0c080a051a4d0a0e0e0c505023040e020a0f4d000c0e"><span class="__cf_email__" data-cfemail="375b585c5e514e195e5a5a58040477505a565e5b1954585a">[email&#160;protected]</span></a></p>
+    <p>📧 Contact : <a href="mailto:lokify.immo33@gmail.com">lokify.immo33@gmail.com</a></p>
     <small><span>Lokify</span> — Analyse de dossiers locataires par intelligence artificielle · © 2025 Lokify · Tous droits réservés · RGPD · Propulsé par Claude / Anthropic</small>
   </footer>
 </div>
 
 <script>
-var PROXY_URL='/.netlify/functions/analyze';
-var MAX_FREE=5;
-var STORAGE_KEY='lokify_analyses_used';
-var HISTORY_KEY='lokify_history';
+const PROXY_URL='/.netlify/functions/analyze';
+const MAX_FREE=5;
+const STORAGE_KEY='lokify_analyses_used';
+const HISTORY_KEY='lokify_history';
 
 // ── HISTORIQUE ──
 function getHistory(){
-  try{var raw=localStorage.getItem(HISTORY_KEY);return raw?JSON.parse(raw):[];}catch(e){return[];}
+  try{
+    const raw=localStorage.getItem(HISTORY_KEY);
+    return raw?JSON.parse(raw):[];
+  }catch(e){return[];}
 }
 function saveHistory(h){
   try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}
 }
 function addToHistory(entry){
-  var h=getHistory();
-  var newE={};
-  for(var k in entry){newE[k]=entry[k];}
-  newE.id=Date.now();
-  newE.date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  h.unshift(newE);
+  const h=getHistory();
+  h.unshift({...entry,id:Date.now(),date:new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
   saveHistory(h);
   renderHistory();
 }
 function deleteFromHistory(id){
-  var h=getHistory().filter(function(e){return e.id!==id;});
+  const h=getHistory().filter(e=>e.id!==id);
   saveHistory(h);
   renderHistory();
 }
@@ -846,371 +831,315 @@ function clearHistory(){
   if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}
 }
 
-var currentFilter='all';
+let currentFilter='all';
 function filterHistory(f){
   currentFilter=f;
-  var fbs=document.querySelectorAll('.filter-btn');
-  for(var i=0;i<fbs.length;i++){fbs[i].classList.remove('active');}
-  document.getElementById('filter-'+f).classList.add('active');
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter'+(f==='all'?'All':f==='FAVORABLE'?'Fav':f==='FAVORABLE_RESERVE'?'Res':'Nok')).classList.add('active');
   renderHistory();
 }
+
 function renderHistory(){
-  var all=getHistory();
-  var data=currentFilter==='all'?all:all.filter(function(e){return e.verdict===currentFilter;});
-  var total=all.length;
-  var ok=all.filter(function(e){return e.verdict==='FAVORABLE';}).length;
-  var res=all.filter(function(e){return e.verdict==='FAVORABLE_RESERVE';}).length;
-  var nok=all.filter(function(e){return e.verdict==='DEFAVORABLE';}).length;
-  document.getElementById('historyStats').innerHTML=
-    '<div class="kpi"><div class="kpi-val">'+total+'</div><div class="kpi-label">Total analysés</div></div>'+
-    '<div class="kpi"><div class="kpi-val" style="color:var(--green)">'+ok+'</div><div class="kpi-label">Favorables</div></div>'+
-    '<div class="kpi"><div class="kpi-val" style="color:var(--orange)">'+res+'</div><div class="kpi-label">Avec réserves</div></div>'+
-    '<div class="kpi"><div class="kpi-val" style="color:var(--red)">'+nok+'</div><div class="kpi-label">Défavorables</div></div>';
-  var container=document.getElementById('historyContent');
+  const all=getHistory();
+  const data=currentFilter==='all'?all:all.filter(e=>e.verdict===currentFilter);
+  const total=all.length,ok=all.filter(e=>e.verdict==='FAVORABLE').length,res=all.filter(e=>e.verdict==='FAVORABLE_RESERVE').length,nok=all.filter(e=>e.verdict==='DEFAVORABLE').length;
+
+  // Stats
+  document.getElementById('historyStats').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">Total analysés</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green)">${ok}</div><div class="kpi-label">Favorables</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--orange)">${res}</div><div class="kpi-label">Avec réserves</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--red)">${nok}</div><div class="kpi-label">Défavorables</div></div>
+  `;
+
+  const container=document.getElementById('historyContent');
   if(data.length===0){
-    var emptyBtn=all.length===0?'<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage(\'tool\')">Analyser un dossier</button>':'';
-    container.innerHTML='<div class="history-empty">'+
-      '<div class="es-icon">'+(all.length===0?'📋':'🔍')+'</div>'+
-      '<h3>'+(all.length===0?'Aucune analyse pour l instant':'Aucun résultat pour ce filtre')+'</h3>'+
-      '<p>'+(all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.')+'</p>'+
-      emptyBtn+'</div>';
+    container.innerHTML=`<div class="history-empty">
+      <div class="es-icon">${all.length===0?'📋':'🔍'}</div>
+      <h3>${all.length===0?'Aucune analyse pour l\'instant':'Aucun résultat pour ce filtre'}</h3>
+      <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.'}</p>
+      ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
+    </div>`;
     return;
   }
-  var vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
-  var rows='';
-  for(var i=0;i<data.length;i++){
-    var e=data[i];
-    var v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
-    var sc=e.score>=70?'g':e.score>=45?'o':'r';
-    var ec=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
-    rows+='<div class="history-row">'+
-      '<div class="hr-name">'+e.prenom+' '+e.nom+'</div>'+
-      '<div class="hr-prop">'+e.type+' · '+parseInt(e.loyer).toLocaleString('fr-FR')+'€/mois'+(e.adresse?' · '+e.adresse:'')+'</div>'+
-      '<div class="hr-score '+sc+'">'+e.score+'</div>'+
-      '<div class="hr-effort met-val '+ec+'">'+e.taux_effort+'%</div>'+
-      '<div><span class="verdict-badge '+v.cls+'">'+v.icon+' '+v.label+'</span></div>'+
-      '<div class="hr-date">'+e.date+'</div>'+
-      '<div><button class="hr-del" onclick="deleteFromHistory('+e.id+')" title="Supprimer">🗑️</button></div>'+
-    '</div>';
-  }
-  container.innerHTML='<div class="history-table">'+
-    '<div class="history-table-head"><span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span></div>'+
-    rows+'</div>';
+
+  const vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
+  container.innerHTML=`
+    <div class="history-table">
+      <div class="history-table-head">
+        <span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span>
+      </div>
+      ${data.map(e=>{
+        const v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
+        const scoreCls=e.score>=70?'g':e.score>=45?'o':'r';
+        const effortCls=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
+        return `<div class="history-row">
+          <div class="hr-name">${e.prenom} ${e.nom}</div>
+          <div class="hr-prop">${e.type} · ${parseInt(e.loyer).toLocaleString('fr-FR')}€/mois${e.adresse?' · '+e.adresse:''}</div>
+          <div class="hr-score ${scoreCls}">${e.score}</div>
+          <div class="hr-effort met-val ${effortCls}">${e.taux_effort}%</div>
+          <div><span class="verdict-badge ${v.cls}">${v.icon} ${v.label}</span></div>
+          <div class="hr-date">${e.date}</div>
+          <div><button class="hr-del" onclick="deleteFromHistory(${e.id})" title="Supprimer">🗑️</button></div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
 }
 
-// ── CRÉDITS ──
-function getUsed(){var v=parseInt(localStorage.getItem(STORAGE_KEY));return isNaN(v)?0:v;}
+// ── CREDITS ──
+function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
+function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
-function incrementUsed(){localStorage.setItem(STORAGE_KEY,getUsed()+1);}
-function checkCredits(){
-  if(getRemaining()>0)return true;
-  document.getElementById('upgradeModal').classList.add('show');
-  return false;
-}
 function updateCreditsUI(){
-  var r=getRemaining(),u=getUsed();
-  var badge=document.getElementById('creditsBadge');
-  var text=document.getElementById('creditsText');
-  var title=document.getElementById('trialTitle');
-  var dots=document.getElementById('trialDots');
-  var banner=document.getElementById('trialBanner');
-  if(r===0){
-    if(badge){badge.textContent='Pro requis';badge.className='credits-badge used';}
-    if(text)text.textContent='Passer à Pro';
-    if(banner)banner.className='trial-banner used';
-    if(title)title.textContent='Limite atteinte';
-  } else {
-    if(badge){badge.textContent=r+' analyse'+(r>1?'s':'')+' gratuite'+(r>1?'s':'');badge.className='credits-badge';}
-    if(text)text.textContent=(r>1?r+' analyses gratuites':r+' analyse gratuite');
-    if(title)title.textContent=(r>1?r+' analyses gratuites restantes':r+' analyse gratuite restante');
-  }
-  if(dots){
-    var dotsHtml='';
-    for(var i=0;i<MAX_FREE;i++){dotsHtml+='<div class="trial-dot'+(i<u?' used':'')+'"></div>';}
-    dots.innerHTML=dotsHtml;
-  }
+  const r=getRemaining(),u=getUsed();
+  const badge=document.getElementById('creditsBadge');
+  const text=document.getElementById('creditsText');
+  const title=document.getElementById('trialTitle');
+  const dots=document.getElementById('trialDots');
+  const banner=document.getElementById('trialBanner');
+  text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
+  badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
+  if(r===0){banner.style.background='var(--red-light)';banner.style.borderColor='#f5c6c2';title.textContent='Analyses gratuites épuisées';title.style.color='var(--red)';}
+  else if(r<=2){banner.style.background='#fff8e1';banner.style.borderColor='#ffe082';title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;title.style.color='#b45309';}
+  else{title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;title.style.color='';}
+  dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
 }
+function checkCredits(){if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}return true;}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
 
-// ── PIÈCES ──
-function togglePiece(el){el.classList.toggle('checked');updatePiecesCount();}
-function updatePiecesCount(){
-  var count=document.querySelectorAll('.piece-toggle.checked').length;
-  document.getElementById('piecesCountBadge').textContent=count+(count>1?' sélectionnées':' sélectionnée');
+// ── PIECES ──
+function togglePiece(el){
+  el.classList.toggle('checked');
+  el.querySelector('.pt-box').textContent=el.classList.contains('checked')?'✓':'';
+  const count=document.querySelectorAll('.piece-toggle.checked').length;
+  document.getElementById('piecesCountBadge').textContent=`${count} sélectionnée${count>1?'s':''}`;
 }
-function getSelectedPieces(){
-  var els=document.querySelectorAll('.piece-toggle.checked');
-  var res=[];
-  for(var i=0;i<els.length;i++){res.push(els[i].dataset.piece);}
-  return res;
-}
+function getSelectedPieces(){return [...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
 
 // ── GARANT ──
-var garantFiles=[];
+let garantFiles=[];
 function toggleGarant(){
-  var t=document.getElementById('garantToggle');
-  var f=document.getElementById('garantForm');
-  t.classList.toggle('active');
+  const t=document.getElementById('garantToggle');
+  const f=document.getElementById('garantForm');
+  t.classList.toggle('open');
   f.classList.toggle('show');
 }
-function renderGarantFiles(){
-  var el=document.getElementById('garantFileList');
-  if(!el)return;
-  el.innerHTML=garantFiles.map(function(f,i){
-    return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delGarantFile('+i+')">✕</button></div>';
-  }).join('');
-}
-function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
 function handleGarantFiles(list){
-  for(var gi=0;gi<list.length;gi++){
-    var gf=list[gi];var gfound=false;
-    for(var gj=0;gj<garantFiles.length;gj++){if(garantFiles[gj].name===gf.name){gfound=true;break;}}
-    if(!gfound)garantFiles.push(gf);
-  }
+  [...list].forEach(f=>{if(!garantFiles.find(x=>x.name===f.name))garantFiles.push(f);});
   renderGarantFiles();
 }
-
-// ── FICHIERS PRINCIPAL ──
-var files=[];
-var upZone=null;
-function handleFiles(list){
-  for(var i=0;i<list.length;i++){
-    var f=list[i];var found=false;
-    for(var j=0;j<files.length;j++){if(files[j].name===f.name){found=true;break;}}
-    if(!found){
-      if(f.size>3*1024*1024){
-        showErr('Fichier trop lourd (max 3 Mo) : '+f.name);
-        continue;
-      }
-      files.push(f);
-    }
-  }
-  renderFiles();
+function renderGarantFiles(){
+  document.getElementById('garantFileList').innerHTML=garantFiles.map((f,i)=>`
+    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
+    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
+    <button class="file-del" onclick="delGarantFile(${i})">✕</button></div>`).join('');
 }
+function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
+
+// ── FILES ──
+let files=[];
+const upZone=document.getElementById('upZone');
+upZone.addEventListener('dragover',e=>{e.preventDefault();upZone.classList.add('over');});
+upZone.addEventListener('dragleave',()=>upZone.classList.remove('over'));
+upZone.addEventListener('drop',e=>{e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
+function handleFiles(list){[...list].forEach(f=>{if(!files.find(x=>x.name===f.name))files.push(f);});renderFiles();}
 function renderFiles(){
-  var el=document.getElementById('fileList');
-  if(!el)return;
-  el.innerHTML=files.map(function(f,i){
-    return '<div class="file-item"><div class="file-ic">📄</div><div class="file-nm">'+f.name+'</div><div class="file-sz">'+(f.size/1024).toFixed(0)+' Ko</div><button class="file-del" onclick="delFile('+i+')">✕</button></div>';
-  }).join('');
+  document.getElementById('fileList').innerHTML=files.map((f,i)=>`
+    <div class="file-item"><div class="file-ic">📄</div><div class="file-nm">${f.name}</div>
+    <div class="file-sz">${(f.size/1024).toFixed(0)} Ko</div>
+    <button class="file-del" onclick="delFile(${i})">✕</button></div>`).join('');
 }
 function delFile(i){files.splice(i,1);renderFiles();}
-
 function fileToBase64(file){
-  return new Promise(function(resolve,reject){
-    if(file.type.indexOf('image/')===0){
-      var img=new Image();
-      var url=URL.createObjectURL(file);
-      img.onload=function(){
-        var maxW=1200,maxH=1200;
-        var w=img.width,h=img.height;
-        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
-        if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
-        var canvas=document.createElement('canvas');
-        canvas.width=w;canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        URL.revokeObjectURL(url);
-        resolve(canvas.toDataURL('image/jpeg',0.75).split(',')[1]);
-      };
-      img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Image illisible'));};
-      img.src=url;
-    } else {
-      var r=new FileReader();
-      r.onload=function(){resolve(r.result.split(',')[1]);};
-      r.onerror=function(){reject(new Error('Lecture fichier échouée'));};
-      r.readAsDataURL(file);
-    }
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
   });
 }
 
-// ── NAVIGATION ──
-function showPage(page){
-  var pageMap={tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
-  var navMap={tool:'navTool',history:'navHistory',pricing:'navPricing'};
-  var pgs=document.querySelectorAll('.page');
-  for(var i=0;i<pgs.length;i++){pgs[i].classList.remove('active');}
-  var nls=document.querySelectorAll('.nav-link');
-  for(var i=0;i<nls.length;i++){nls[i].classList.remove('active');}
-  if(pageMap[page])document.getElementById(pageMap[page]).classList.add('active');
-  if(navMap[page])document.getElementById(navMap[page]).classList.add('active');
+// ── UI ──
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(el=>el.classList.remove('active'));
+  const pageMap={tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
+  const navMap={tool:'navTool',history:'navHistory',pricing:'navPricing'};
+  document.getElementById(pageMap[p]).classList.add('active');
+  document.getElementById(navMap[p]).classList.add('active');
+  if(p==='history')renderHistory();
   window.scrollTo(0,0);
-  if(page==='history')renderHistory();
 }
+function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
+function showErr(msg){const e=document.getElementById('errBox');e.textContent='⚠️ '+msg;e.classList.add('show');}
 
 function copyLink(){
-  var btn=document.getElementById('copyBtn');
-  navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(function(){
+  navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(()=>{
+    const btn=document.getElementById('copyBtn');
     btn.textContent='✓ Copié !';
-    setTimeout(function(){btn.textContent='🔗 Copier';},2000);
-  }).catch(function(){btn.textContent='🔗 Copier';});
+    setTimeout(()=>btn.textContent='🔗 Copier',2000);
+  });
 }
 
 // ── PDF ──
-var lastResult=null,lastMeta=null;
-function generatePDF(){
-  var prenom=lastMeta.prenom,nom=lastMeta.nom,loyer=lastMeta.loyer,type=lastMeta.type,adresse=lastMeta.adresse;
-  var r=lastResult;
-  var tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  var vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
-  var sc=r.score>=70?'g':r.score>=45?'o':'r';
-  var piecesRows='';
-  for(var i=0;i<r.pieces.length;i++){
-    var p=r.pieces[i];
-    piecesRows+='<tr><td>'+p.nom+'</td><td>'+(tags[p.statut]||p.statut)+'</td></tr>';
-  }
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify '+prenom+' '+nom+'</title>'+
-    '<style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}'+
-    'h1{font-size:1.6rem;}.score-box{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}'+
-    '.g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}'+
-    'table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}td:first-child{font-weight:600;background:#f5f5ff;width:40%;}'+
-    '.verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}'+
-    '.footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}</style>'+
-    '</head><body>'+
-    '<h1>'+prenom+' '+nom+'</h1><h2>'+type+'</h2>'+
-    '<div class="score-box '+sc+'">'+r.score+'</div>'+
-    '<h3>Indicateurs financiers</h3>'+
-    '<table><tr><td>Revenus nets</td><td>'+r.revenus_nets+'</td></tr>'+
-    '<tr><td>Taux d effort</td><td>'+r.taux_effort+'%</td></tr>'+
-    '<tr><td>Contrat</td><td>'+r.type_contrat+'</td></tr>'+
-    '<tr><td>Ancienneté</td><td>'+r.anciennete+'</td></tr></table>'+
-    '<h3>Pièces</h3><table>'+piecesRows+'</table>'+
-    '<h3>Résumé</h3><p>'+r.resume+'</p>'+
-    '<div class="verdict '+sc+'"><strong>'+(vmap[r.verdict]||'Analyse')+'</strong><br/>'+r.verdict_detail+'</div>'+
-    '<div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app</div>'+
-    '</body></html>';
-  var blob=new Blob([html],{type:'text/html'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='Lokify_'+prenom+'_'+nom+'.html';
-  a.click();
+let lastResult=null,lastMeta=null;
+function downloadPDF(){
+  if(!lastResult||!lastMeta)return;
+  const {prenom,nom,loyer,type,adresse}=lastMeta;
+  const r=lastResult;
+  const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
+  const vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify — ${prenom} ${nom}</title>
+  <style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}
+  h1{font-size:1.6rem;margin-bottom:4px;}h2{font-size:1rem;color:#6b7280;font-weight:normal;margin-bottom:24px;}
+  .score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}
+  .g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}
+  td:first-child{font-weight:600;background:#f5f5ff;width:40%;}
+  .verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}
+  .footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}
+  </style></head><body>
+  <h1>${prenom} ${nom}</h1>
+  <h2>${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois</h2>
+  <div class="score ${r.score>=70?'g':r.score>=45?'o':'r'}">${r.score}</div>
+  <h3>Indicateurs financiers</h3>
+  <table><tr><td>Revenus nets réels</td><td>${r.revenus_nets}</td></tr>
+  <tr><td>Taux d'effort</td><td>${r.taux_effort}%</td></tr>
+  <tr><td>Type de contrat</td><td>${r.type_contrat}</td></tr>
+  <tr><td>Ancienneté</td><td>${r.anciennete}</td></tr>
+  ${r.garant_revenus?`<tr><td>Revenus garant</td><td>${r.garant_revenus}</td></tr><tr><td>Revenus combinés</td><td>${r.revenus_combines}</td></tr>`:''}
+  </table>
+  <h3>Pièces du dossier</h3>
+  <table>${r.pieces.map(p=>`<tr><td>${p.nom}</td><td>${tags[p.statut]}</td></tr>`).join('')}</table>
+  <h3>Résumé du profil</h3><p style="font-size:0.85rem;line-height:1.7;">${r.resume}</p>
+  <div class="verdict ${r.score>=70?'g':r.score>=45?'o':'r'} verdict"><strong>${vmap[r.verdict]||'Analyse complète'}</strong><br/>${r.verdict_detail}</div>
+  <div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app · Propulsé par Claude / Anthropic<br/>
+  Ce rapport est un outil d'aide à la décision. La décision finale appartient à l'agence.</div>
+  </body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`Lokify_${prenom}_${nom}.html`;a.click();
   URL.revokeObjectURL(url);
 }
 
-// ── ANALYSE ──
-var loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification du taux d effort…','Génération du rapport…'];
-var kTotal=0,kOk=0,kRes=0,kNok=0;
+// ── ANALYZE ──
+const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
+let kTotal=0,kOk=0,kRes=0,kNok=0;
 
-function analyze(){
+async function analyze(){
   if(!checkCredits())return;
-  var prenom=document.getElementById('fPrenom').value.trim();
-  var nom=document.getElementById('fNom').value.trim();
-  var loyer=document.getElementById('fLoyer').value;
-  var type=document.getElementById('fType').value;
-  var adresse=document.getElementById('fAdresse').value.trim();
-  var errBox=document.getElementById('errBox');
+  const prenom=document.getElementById('fPrenom').value.trim();
+  const nom=document.getElementById('fNom').value.trim();
+  const loyer=document.getElementById('fLoyer').value;
+  const type=document.getElementById('fType').value;
+  const adresse=document.getElementById('fAdresse').value.trim();
+  const errBox=document.getElementById('errBox');
   errBox.classList.remove('show');
   if(!prenom||!nom){showErr('Veuillez renseigner le prénom et le nom.');return;}
   if(!loyer||loyer<=0){showErr('Veuillez renseigner le montant du loyer.');return;}
-  var hasGarant=document.getElementById('garantForm').classList.contains('show');
-  var gPrenom=document.getElementById('gPrenom').value.trim();
-  var gNom=document.getElementById('gNom').value.trim();
-  var gLien=document.getElementById('gLien').value;
-  var gRevenus=document.getElementById('gRevenus').value;
-  var selectedPieces=getSelectedPieces();
+
+  const hasGarant=document.getElementById('garantForm').classList.contains('show');
+  const gPrenom=document.getElementById('gPrenom').value.trim();
+  const gNom=document.getElementById('gNom').value.trim();
+  const gLien=document.getElementById('gLien').value;
+  const gRevenus=document.getElementById('gRevenus').value;
+  const selectedPieces=getSelectedPieces();
+
   document.getElementById('emptyCard').style.display='none';
   document.getElementById('resultCard').classList.remove('show');
   document.getElementById('loaderCard').style.display='block';
   document.getElementById('btnAnalyze').disabled=true;
-  var si=0;
-  var sl=document.getElementById('loaderStep');
+
+  let si=0;
+  const sl=document.getElementById('loaderStep');
   sl.textContent=loadSteps[0];
-  var iv=setInterval(function(){if(si<loadSteps.length-1)sl.textContent=loadSteps[++si];},800);
-  // Construire les fichiers
-  var allFiles=[];
-  for(var i=0;i<files.length;i++){allFiles.push(files[i]);}
-  for(var i=0;i<garantFiles.length;i++){allFiles.push(garantFiles[i]);}
-  // Convertir tous les fichiers en base64 puis envoyer
-  var msgContent=[];
-  var fileIndex=0;
-  function processNextFile(){
-    if(fileIndex>=allFiles.length){sendRequest();return;}
-    var f=allFiles[fileIndex];
-    fileIndex++;
-    fileToBase64(f).then(function(data){
+  const iv=setInterval(()=>{if(si<loadSteps.length-1)sl.textContent=loadSteps[++si];},800);
+
+  try{
+    const allFiles=[...files,...garantFiles];
+    const msgContent=[];
+    for(const f of allFiles){
+      const data=await fileToBase64(f);
       if(f.type==='application/pdf'||f.name.endsWith('.pdf')){
-        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:data}});
+        msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data}});
       } else {
-        msgContent.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data:data}});
+        msgContent.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data}});
       }
-      processNextFile();
-    }).catch(function(e){
-      clearInterval(iv);
-      finishError(e.message);
+    }
+
+    const garantInfo=hasGarant&&gPrenom?`\n\nGARANT: ${gPrenom} ${gNom} (${gLien}), revenus déclarés: ${gRevenus}€/mois. Les documents du garant sont inclus. Vérifie que le nom du garant correspond à sa pièce d'identité.`:'';
+    const piecesInfo=`\n\nPIÈCES DEMANDÉES PAR L'AGENCE (vérifie uniquement celles-ci): ${selectedPieces.join(', ')}.`;
+
+    msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.${garantInfo}${piecesInfo}
+
+IMPORTANT: Vérifie que le prénom "${prenom}" et le nom "${nom}" correspondent exactement à ceux figurant sur la pièce d'identité fournie. Si les noms ne correspondent pas, indique-le dans le resume et mets le verdict à DEFAVORABLE.
+
+Lis attentivement tous les documents et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"},{"nom":"Contrat de travail","statut":"missing"},{"nom":"Pièce d'identité","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
+
+    const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
+    clearInterval(iv);
+    const apiResp=await resp.json();
+    if(apiResp.error)throw new Error('API: '+apiResp.error.message);
+    if(!apiResp.content||!apiResp.content[0])throw new Error('Pas de réponse: '+JSON.stringify(apiResp).substring(0,100));
+    const rawText=apiResp.content[0].text;
+    const jsonMatch=rawText.match(/\{[\s\S]*\}/);
+    if(!jsonMatch)throw new Error('Format invalide: '+rawText.substring(0,100));
+    const result=JSON.parse(jsonMatch[0]);
+
+    incrementUsed();
+    updateCreditsUI();
+    lastResult=result;
+    lastMeta={prenom,nom,loyer,type,adresse};
+
+    // Sauvegarder dans l'historique
+    addToHistory({
+      prenom,nom,loyer,type,adresse,
+      score:result.score,
+      taux_effort:result.taux_effort,
+      revenus_nets:result.revenus_nets,
+      type_contrat:result.type_contrat,
+      verdict:result.verdict
     });
-  }
-  function sendRequest(){
-    var garantInfo=hasGarant&&gPrenom?'\n\nGARANT: '+gPrenom+' '+gNom+' ('+gLien+'), revenus déclarés: '+gRevenus+'€/mois.':'';
-    var piecesInfo='\n\nPIÈCES DEMANDÉES (vérifie uniquement celles-ci): '+selectedPieces.join(', ')+'.';
-    msgContent.push({type:'text',text:'Analyse ce dossier. Candidat: '+prenom+' '+nom+'. Loyer: '+loyer+'€/mois. Bien: '+type+' à '+adresse+'.'+garantInfo+piecesInfo+'\n\nRéponds UNIQUEMENT avec un objet JSON: {"score":85,"revenus_nets":"1828€/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","fraude_score":"FAIBLE","fraude_alertes":[],"garant_revenus":null,"revenus_combines":null,"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé.","verdict":"FAVORABLE","verdict_detail":"Explication.","donnees_lues":true}'});
-    fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,
-    .then(function(resp){
-      if(!resp.ok)throw new Error('Erreur réseau: '+resp.status);
-      return resp.json();
-    })
-    .then(function(apiResp){
-      clearInterval(iv);
-      if(!apiResp)throw new Error('Réponse vide');
-      if(apiResp.error)throw new Error('API: '+(apiResp.error.message||JSON.stringify(apiResp.error)));
-      if(!apiResp.content||!apiResp.content[0])throw new Error('API dit: '+JSON.stringify(apiResp).substring(0,150));
-      var rawText=apiResp.content[0].text||'';
-      var result=null;
-      try{
-        var start=rawText.indexOf('{');
-        var end=rawText.lastIndexOf('}');
-        if(start===-1||end===-1)throw new Error('Pas de JSON');
-        result=JSON.parse(rawText.substring(start,end+1));
-      }catch(parseErr){
-        throw new Error('Parsing JSON: '+rawText.substring(0,80));
-      }
-      lastResult=result;
-      lastMeta={prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse};
-      document.getElementById('loaderCard').style.display='none';
-      document.getElementById('btnAnalyze').disabled=false;
-      showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
-      incrementUsed();
-      try{updateCreditsUI();}catch(e){}
-      addToHistory({prenom:prenom,nom:nom,loyer:loyer,type:type,adresse:adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
-      kTotal++;
-      if(result.verdict==='FAVORABLE')kOk++;
-      else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
-      else kNok++;
-      document.getElementById('kpiTotal').textContent=kTotal;
-      document.getElementById('kpiOk').textContent=kOk;
-      document.getElementById('kpiRes').textContent=kRes;
-      document.getElementById('kpiNok').textContent=kNok;
-      if(getRemaining()===0){setTimeout(function(){document.getElementById('upgradeModal').classList.add('show');},3000);}
-      if(result.verdict==='FAVORABLE'){setTimeout(function(){document.getElementById('sharePopup').classList.add('show');},2000);}
-    })
-    .catch(function(e){
-      clearInterval(iv);
-      finishError(e.message);
-    });
-  }
-  function finishError(msg){
+
+    document.getElementById('loaderCard').style.display='none';
+    document.getElementById('btnAnalyze').disabled=false;
+    showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
+
+    kTotal++;
+    if(result.verdict==='FAVORABLE')kOk++;
+    else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
+    else kNok++;
+    document.getElementById('kpiTotal').textContent=kTotal;
+    document.getElementById('kpiOk').textContent=kOk;
+    document.getElementById('kpiRes').textContent=kRes;
+    document.getElementById('kpiNok').textContent=kNok;
+
+    if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
+    if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
+
+  }catch(e){
+    clearInterval(iv);
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('emptyCard').style.display='block';
     document.getElementById('btnAnalyze').disabled=false;
-    showErr('Erreur : '+msg);
+    showErr('Erreur : '+e.message);
   }
-  processNextFile();
-}
-
-function showErr(msg){
-  var b=document.getElementById('errBox');
-  b.textContent=msg;
-  b.classList.add('show');
 }
 
 function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
-  var srcTag=document.getElementById('sourceTag');
-  srcTag.innerHTML=r.donnees_lues?'<div class="source-tag">✓ Données lues depuis les documents</div>':'<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>';
-  var ring=document.getElementById('scoreRing');
+  const srcTag=document.getElementById('sourceTag');
+  srcTag.innerHTML=r.donnees_lues?`<div class="source-tag">✓ Données lues depuis les documents</div>`:`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
+  const ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
-  var e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
+  const e=parseInt(r.taux_effort),ecls=e<=33?'g':e<=40?'o':'r';
   document.getElementById('mRevenu').textContent=r.revenus_nets;
   document.getElementById('mRevenu').className='met-val '+ecls;
   document.getElementById('mEffort').textContent=r.taux_effort+'%';
@@ -1218,87 +1147,44 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('mContrat').textContent=r.type_contrat;
   document.getElementById('mContrat').className='met-val '+(r.type_contrat==='CDI'||r.type_contrat==='Fonctionnaire'?'g':r.type_contrat==='CDD'?'o':'');
   document.getElementById('mAnc').textContent=r.anciennete;
-  var fill=document.getElementById('effortFill');
-  setTimeout(function(){fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
-  var garantSection=document.getElementById('garantResultSection');
+  const fill=document.getElementById('effortFill');
+  setTimeout(()=>{fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
+
+  const garantSection=document.getElementById('garantResultSection');
   if(hasGarant&&r.garant_revenus){
     garantSection.style.display='block';
     document.getElementById('mGRevenu').textContent=r.garant_revenus;
     document.getElementById('mGCombine').textContent=r.revenus_combines||'—';
   } else {garantSection.style.display='none';}
-  var tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
-  document.getElementById('piecesList').innerHTML=r.pieces.map(function(p){
-    return '<div class="piece-row"><div class="pdot '+p.statut+'"></div><div class="pname">'+p.nom+'</div><div class="ptag '+p.statut+'">'+tags[p.statut]+'</div></div>';
-  }).join('');
+
+  const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
+  document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
+    <div class="piece-row"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
-  var fraudeSection=document.getElementById('fraudeSection');
-  var fs=r.fraude_score||'FAIBLE';
-  var alertes=r.fraude_alertes||[];
-  fraudeSection.style.display='block';
-  var fsCls=fs==='FAIBLE'?'g':fs==='MODERE'?'o':'r';
-  var fsIcon=fs==='FAIBLE'?'✅':fs==='MODERE'?'⚠️':'🚨';
-  var fHtml='<div style="display:flex;align-items:center;gap:10px;margin-bottom:'+(alertes.length>0?'12px':'0')+'">'+
-    '<span style="font-size:1.2rem;">'+fsIcon+'</span>'+
-    '<span class="met-val '+fsCls+'" style="font-size:0.9rem;">Risque '+fs+'</span></div>';
-  if(alertes.length>0){
-    fHtml+='<div style="display:flex;flex-direction:column;gap:6px;">';
-    for(var i=0;i<alertes.length;i++){
-      fHtml+='<div style="display:flex;align-items:flex-start;gap:8px;background:var(--orange-light);border:1px solid #f0d080;border-radius:8px;padding:8px 10px;font-size:0.78rem;color:var(--orange);">⚠️ '+alertes[i]+'</div>';
-    }
-    fHtml+='</div>';
-  } else {fHtml+='<p style="font-size:0.78rem;color:var(--muted);margin:0;">Aucune anomalie détectée sur les documents analysés.</p>';}
-  document.getElementById('fraudeContent').innerHTML=fHtml;
-  var vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
-  var v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
+  const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
+  const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
-  var vIcon=document.getElementById('vIcon');
-  var vTxt=document.getElementById('vTxt');
-  if(vIcon)vIcon.textContent=v.icon;
-  if(vTxt)vTxt.innerHTML='<strong>'+v.lbl+'</strong><br/>'+r.verdict_detail;
+  document.getElementById('vIcon').textContent=v.icon;
+  document.getElementById('vTxt').innerHTML=`<strong>${v.lbl}</strong>${r.verdict_detail}`;
   document.getElementById('resultCard').classList.add('show');
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ── INIT ──
-function initApp(){
-  try{updateCreditsUI();}catch(e){}
-  try{renderHistory();}catch(e){}
-  upZone=document.getElementById('upZone');
-  if(upZone){
-    upZone.addEventListener('dragover',function(e){e.preventDefault();upZone.classList.add('over');});
-    upZone.addEventListener('dragleave',function(){upZone.classList.remove('over');});
-    upZone.addEventListener('drop',function(e){e.preventDefault();upZone.classList.remove('over');handleFiles(e.dataTransfer.files);});
-  }
-}
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',initApp);
-} else {
-  initApp();
-}
-
-
-function closeModal(id){
-  var m=document.getElementById(id);
-  if(m)m.classList.remove('show');
-}
-function downloadPDF(){generatePDF();}
 function resetForm(){
-  document.getElementById('fPrenom').value='';
-  document.getElementById('fNom').value='';
-  document.getElementById('fLoyer').value='';
-  document.getElementById('fAdresse').value='';
-  files=[];renderFiles();
-  garantFiles=[];renderGarantFiles();
+  files=[];garantFiles=[];renderFiles();renderGarantFiles();
+  ['fPrenom','fNom','fLoyer','fAdresse','gPrenom','gNom','gRevenus'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('resultCard').classList.remove('show');
   document.getElementById('emptyCard').style.display='block';
   document.getElementById('errBox').classList.remove('show');
+  document.getElementById('garantToggle').classList.remove('open');
+  document.getElementById('garantForm').classList.remove('show');
+  document.getElementById('sharePopup').classList.remove('show');
+  lastResult=null;lastMeta=null;
 }
-function toggleFaq(btn){
-  var item=btn.parentElement;
-  var isOpen=item.classList.contains('open');
-  var allItems=document.querySelectorAll('.faq-item');
-  for(var i=0;i<allItems.length;i++){allItems[i].classList.remove('open');}
-  if(!isOpen)item.classList.add('open');
-}
+
+// Init
+updateCreditsUI();
 </script>
+
 </body>
 </html>
