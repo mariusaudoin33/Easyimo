@@ -1,458 +1,372 @@
 <!DOCTYPE html>
-<html lang="fr" style="color-scheme:light only;">
+<html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="color-scheme" content="light only"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lokify — Analyse de dossiers locataires par IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#f0f1fa;--white:#ffffff;--black:#0c0b1e;--text:#1e1b4b;--muted:#6b7280;--border:#e0dff8;
+  --bg:#f5f5ff;--white:#fff;--black:#0c0b1e;--text:#1e1b4b;--muted:#6b7280;--border:#e0dff8;
   --violet:#4f46e5;--violet-dark:#3730a3;--violet-light:#eef2ff;--violet-mid:#c7d2fe;
   --green:#2e7d52;--green-light:#e8f5ee;--orange:#c17d11;--orange-light:#fef3dc;
   --red:#c0392b;--red-light:#fdecea;
-  --shadow-sm:0 1px 3px rgba(79,70,229,0.06),0 2px 8px rgba(79,70,229,0.05);
+  --shadow-sm:0 1px 3px rgba(79,70,229,0.06),0 2px 8px rgba(79,70,229,0.06);
   --shadow:0 2px 8px rgba(79,70,229,0.08),0 8px 24px rgba(79,70,229,0.08);
   --shadow-lg:0 16px 48px rgba(79,70,229,0.18);
   --radius:14px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;background:#f0f1fa;}
-body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;overflow-x:hidden;}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(240,241,250,0.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(224,223,248,0.8);}
-.nav-logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;color:var(--black);text-decoration:none;letter-spacing:-0.02em;}
-.logo-badge{width:38px;height:38px;border-radius:10px;border:2px solid var(--violet);background:var(--white);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;color:var(--violet);}
-.nav-links{display:flex;gap:4px;}
-.nav-link{font-size:0.875rem;font-weight:500;color:var(--muted);padding:8px 14px;border-radius:8px;border:none;background:none;cursor:pointer;transition:all 0.2s;font-family:'Instrument Sans',sans-serif;}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(245,245,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(224,223,248,0.7);}
+.nav-logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--black);text-decoration:none;letter-spacing:-0.02em;}
+.logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);}
+.nav-links{display:flex;gap:8px;}
+.nav-link{font-size:0.875rem;font-weight:500;color:var(--muted);padding:8px 16px;border-radius:8px;border:none;background:none;cursor:pointer;transition:all 0.2s;}
 .nav-link:hover,.nav-link.active{background:var(--violet-light);color:var(--violet);}
-.nav-right{display:flex;align-items:center;gap:8px;}
-.credits-badge{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;color:var(--violet-dark);cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow-sm);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-cta{background:var(--violet);color:#fff;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;font-weight:600;padding:10px 22px;border-radius:9px;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(79,70,229,0.35);}
+.nav-cta:hover{background:var(--violet-dark);transform:translateY(-1px);}
+.credits-badge{display:flex;align-items:center;gap:6px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;color:var(--violet-dark);cursor:pointer;transition:all 0.2s;}
 .credits-badge.low{background:#fff8e1;border-color:#ffe082;color:#b45309;}
 .credits-badge.empty{background:var(--red-light);border-color:#f5c6c2;color:var(--red);}
-.credits-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);animation:pulse-dot 2s infinite;}
+.credits-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);}
 .credits-badge.low .credits-dot{background:#b45309;}
 .credits-badge.empty .credits-dot{background:var(--red);}
-.nav-cta{background:var(--violet);color:#fff;font-family:'Instrument Sans',sans-serif;font-size:0.875rem;font-weight:600;padding:10px 20px;border-radius:9px;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(79,70,229,0.3);}
-.nav-cta:hover{background:var(--violet-dark);transform:translateY(-1px);}
 
-.page{display:none;min-height:100vh;padding-top:64px;}
+/* BURGER */
+.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;border:none;background:none;}
+.burger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:all 0.3s;}
+.mobile-menu{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(245,245,255,0.98);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:199;padding:12px 16px;flex-direction:column;gap:4px;}
+.mobile-menu.open{display:flex;}
+.mobile-menu .nav-link{width:100%;text-align:left;padding:12px 16px;}
+
+.page{display:none;min-height:100vh;padding-top:68px;}
 .page.active{display:block;}
 
-/* ── LANDING ── */
-#pageLanding{background:var(--bg);}
-.landing-wrap{max-width:480px;margin:0 auto;padding:40px 20px 80px;}
-
-.hero-section{padding:36px 0 28px;}
-.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--white);border:1px solid rgba(79,70,229,0.2);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:600;color:var(--text);margin-bottom:20px;box-shadow:var(--shadow-sm);}
-.hero-badge-dot{width:8px;height:8px;background:var(--violet);border-radius:50%;animation:pulse-dot 2s infinite;}
-.hero-section h1{font-family:'Syne',sans-serif;font-size:38px;font-weight:900;line-height:1.06;letter-spacing:-1.8px;color:var(--black);margin-bottom:14px;}
-.hero-section h1 .accent{color:var(--violet);}
-.hero-section p{font-size:15px;color:var(--muted);line-height:1.7;margin-bottom:28px;max-width:340px;}
-.hero-ctas{display:flex;gap:10px;}
-.btn-hero-main{background:var(--violet);color:#fff;border:none;border-radius:12px;padding:15px 0;font-size:15px;font-weight:700;font-family:'Instrument Sans',sans-serif;cursor:pointer;flex:1;transition:opacity 0.15s;box-shadow:0 4px 16px rgba(79,70,229,0.3);}
-.btn-hero-main:hover{opacity:0.88;}
-.btn-hero-sec{background:var(--white);color:var(--text);border:1.5px solid var(--border);border-radius:12px;padding:15px 20px;font-size:15px;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow-sm);}
-.btn-hero-sec:hover{border-color:var(--violet);color:var(--violet);}
-
-/* METRICS CARDS */
-.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:28px 0;}
-.metric-card{border-radius:18px;padding:20px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-sm);}
-.metric-card.white{background:var(--white);}
-.metric-card.dark{background:#1a1a2e;color:#fff;}
-.metric-card.violet{background:var(--violet);color:#fff;}
-.metric-icon{font-size:22px;margin-bottom:2px;}
-.metric-val{font-family:'Syne',sans-serif;font-size:23px;font-weight:900;letter-spacing:-1px;line-height:1;}
-.metric-card.dark .metric-val,.metric-card.violet .metric-val{color:#fff;}
-.metric-label{font-size:12px;color:var(--muted);font-weight:500;line-height:1.4;}
-.metric-card.dark .metric-label{color:rgba(255,255,255,0.5);}
-.metric-card.violet .metric-label{color:rgba(255,255,255,0.65);}
-
-/* FEATURES */
-.features-section{margin:4px 0 28px;}
-.section-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9999bb;margin-bottom:8px;}
-.section-heading{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px;color:var(--black);margin-bottom:16px;}
-.feature-cards{display:flex;flex-direction:column;gap:8px;}
-.feature-card{background:var(--white);border-radius:16px;padding:18px 16px;display:flex;align-items:center;gap:14px;transition:all 0.18s ease;box-shadow:var(--shadow-sm);}
-.feature-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,70,229,0.12);}
-.feature-icon-box{width:46px;height:46px;min-width:46px;border-radius:13px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;}
-.feature-new{font-size:10px;font-weight:700;color:var(--violet);background:var(--violet-light);border-radius:100px;padding:2px 8px;letter-spacing:0.04em;margin-left:6px;vertical-align:middle;}
-.feature-text h3{font-size:14px;font-weight:700;margin-bottom:3px;letter-spacing:-0.2px;color:var(--black);}
-.feature-text p{font-size:12px;color:var(--muted);line-height:1.55;}
-
-/* TRUST */
-.trust-card{background:var(--white);border-radius:18px;padding:22px 18px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
-.trust-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;letter-spacing:-0.3px;margin-bottom:16px;color:var(--black);}
-.trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.trust-item{display:flex;flex-direction:column;gap:4px;}
-.trust-item-icon{font-size:20px;margin-bottom:2px;}
-.trust-item h4{font-size:13px;font-weight:700;color:var(--black);}
-.trust-item p{font-size:11px;color:var(--muted);line-height:1.5;}
-
-/* CTA BAND */
-.cta-band{background:var(--violet);border-radius:20px;padding:28px 22px;text-align:center;color:#fff;margin-bottom:12px;}
-.cta-band h2{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;letter-spacing:-0.8px;margin-bottom:8px;}
-.cta-band p{font-size:14px;opacity:0.75;margin-bottom:20px;line-height:1.6;}
-.btn-cta-white{background:#fff;color:var(--violet);border:none;border-radius:11px;padding:14px 28px;font-size:15px;font-weight:800;font-family:'Instrument Sans',sans-serif;cursor:pointer;width:100%;transition:opacity 0.15s;}
-.btn-cta-white:hover{opacity:0.9;}
-
-/* ── TOOL PAGE ── */
-.tool-wrap{max-width:1160px;margin:0 auto;padding:36px 24px 80px;}
-.tool-header{margin-bottom:28px;}
-.tool-header h1{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:4px;}
-.tool-header p{font-size:0.88rem;color:var(--muted);}
-.ai-badge{display:inline-flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:700;color:var(--violet-dark);margin-bottom:16px;box-shadow:var(--shadow-sm);}
+/* TOOL */
+.tool-wrap{max-width:1160px;margin:0 auto;padding:40px 24px 80px;}
+.tool-header{margin-bottom:32px;}
+.tool-header h1{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:6px;}
+.tool-header p{font-size:0.9rem;color:var(--muted);}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:20px;padding:5px 14px;font-size:0.75rem;font-weight:700;color:var(--violet-dark);margin-bottom:20px;}
 .ai-dot{width:7px;height:7px;background:var(--violet);border-radius:50%;animation:pulse-dot 2s infinite;}
 
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
 .kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);}
 .kpi-val{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:700;color:var(--black);line-height:1;margin-bottom:4px;}
 .kpi-label{font-size:0.75rem;color:var(--muted);font-weight:500;}
 
-.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow-sm);}
-.card-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--black);margin-bottom:4px;}
-.card-sub{font-size:0.78rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow-sm);}
+.card-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--black);margin-bottom:4px;}
+.card-sub{font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
 
 /* TRIAL BANNER */
-.trial-banner{border-radius:11px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--violet-light);border:1px solid var(--violet-mid);}
-.trial-banner.warn{background:#fff8e1;border-color:#ffe082;}
-.trial-banner.danger{background:var(--red-light);border-color:#f5c6c2;}
+.trial-banner{background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:11px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .trial-left{display:flex;align-items:center;gap:10px;}
-.trial-icon{font-size:1.1rem;}
-.trial-text{font-size:0.78rem;color:var(--violet-dark);}
-.trial-banner.warn .trial-text{color:#b45309;}
-.trial-banner.danger .trial-text{color:var(--red);}
-.trial-text strong{display:block;font-weight:700;font-size:0.82rem;}
+.trial-icon{font-size:1.2rem;}
+.trial-text{font-size:0.8rem;color:var(--violet-dark);}
+.trial-text strong{display:block;font-weight:700;font-size:0.85rem;}
 .trial-dots{display:flex;gap:4px;}
-.trial-dot{width:9px;height:9px;border-radius:50%;background:var(--violet-mid);}
+.trial-dot{width:10px;height:10px;border-radius:50%;background:var(--violet-mid);}
 .trial-dot.used{background:var(--violet);}
-.trial-banner.warn .trial-dot{background:#ffe082;}
-.trial-banner.warn .trial-dot.used{background:#b45309;}
-.trial-banner.danger .trial-dot{background:#f5c6c2;}
-.trial-banner.danger .trial-dot.used{background:var(--red);}
 
 /* PIECES */
-.pieces-section{margin-bottom:18px;}
-.pieces-section-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
-.pieces-count-badge{background:var(--violet);color:#fff;border-radius:10px;padding:2px 8px;font-size:0.67rem;font-weight:700;}
-.pieces-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
-.piece-toggle{border:1.5px solid var(--border);border-radius:9px;padding:7px 8px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:5px;background:var(--white);user-select:none;}
+.pieces-section{margin-bottom:20px;}
+.pieces-section-title{font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.pieces-count-badge{background:var(--violet);color:#fff;border-radius:10px;padding:2px 8px;font-size:0.68rem;font-weight:700;}
+.pieces-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.piece-toggle{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;background:var(--white);user-select:none;}
 .piece-toggle:hover{border-color:var(--violet-mid);}
 .piece-toggle.checked{border-color:var(--violet);background:var(--violet-light);}
-.pt-box{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:0.5rem;}
+.pt-box{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:0.55rem;}
 .piece-toggle.checked .pt-box{background:var(--violet);border-color:var(--violet);color:#fff;}
-.pt-icon{font-size:0.8rem;}
-.pt-label{font-size:0.65rem;font-weight:500;color:var(--text);line-height:1.2;}
+.pt-icon{font-size:0.85rem;}
+.pt-label{font-size:0.68rem;font-weight:500;color:var(--text);line-height:1.2;}
 .piece-toggle.checked .pt-label{color:var(--violet-dark);font-weight:600;}
 
 /* UPLOAD */
-.upload-zone{border:2px dashed var(--border);border-radius:11px;padding:22px 18px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
+.upload-zone{border:2px dashed var(--border);border-radius:11px;padding:24px 20px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
 .upload-zone:hover,.upload-zone.over{border-color:var(--violet);background:var(--violet-light);}
-.upload-icon-wrap{width:38px;height:38px;background:var(--white);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:1.1rem;box-shadow:var(--shadow-sm);}
-.upload-title{font-weight:600;font-size:0.83rem;margin-bottom:3px;}
-.upload-hint{font-size:0.7rem;color:var(--muted);}
+.upload-icon-wrap{width:40px;height:40px;background:var(--violet-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.2rem;}
+.upload-title{font-weight:600;font-size:0.85rem;margin-bottom:3px;}
+.upload-hint{font-size:0.72rem;color:var(--muted);}
 .upload-hint span{color:var(--violet);font-weight:600;}
 #fileInput{display:none;}
-.file-list{margin-top:8px;display:flex;flex-direction:column;gap:5px;}
-.file-item{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px;animation:fadeUp 0.25s ease;}
-.file-ic{width:24px;height:24px;background:var(--violet-light);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;}
-.file-nm{font-size:0.72rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.file-sz{font-size:0.63rem;color:var(--muted);flex-shrink:0;}
+.file-list{margin-top:10px;display:flex;flex-direction:column;gap:5px;}
+.file-item{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 11px;animation:fadeUp 0.25s ease;}
+.file-ic{width:26px;height:26px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;}
+.file-nm{font-size:0.75rem;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-sz{font-size:0.65rem;color:var(--muted);flex-shrink:0;}
 .file-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 4px;border-radius:4px;transition:all 0.15s;}
 .file-del:hover{background:#fee2e2;color:var(--red);}
 
-.sep{height:1px;background:var(--border);margin:16px 0;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.fg{margin-bottom:10px;}
-.fl{display:block;font-size:0.7rem;font-weight:600;color:var(--text);margin-bottom:4px;}
-.fi,.fs{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.83rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;}
+.sep{height:1px;background:var(--border);margin:18px 0;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:4px;}
+.fi,.fs{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;}
 .fi:focus,.fs:focus{border-color:var(--violet);}
 
-/* EMAIL CANDIDAT */
-.fg-email{margin-bottom:10px;}
-.email-hint{font-size:0.68rem;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px;}
-
 /* GARANT */
-.garant-toggle{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:10px;}
+.garant-toggle{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:12px;}
 .garant-toggle:hover{border-color:var(--violet-mid);}
 .garant-toggle.open{border-color:var(--violet);background:var(--violet-light);}
-.gt-icon{font-size:0.95rem;}
+.gt-icon{font-size:1rem;}
 .gt-text{flex:1;}
-.gt-text strong{display:block;font-size:0.8rem;font-weight:600;color:var(--black);}
-.gt-text span{font-size:0.68rem;color:var(--muted);}
-.gt-arrow{color:var(--muted);transition:transform 0.25s;font-size:0.75rem;}
+.gt-text strong{display:block;font-size:0.82rem;font-weight:600;color:var(--black);}
+.gt-text span{font-size:0.7rem;color:var(--muted);}
+.gt-arrow{color:var(--muted);transition:transform 0.25s;font-size:0.8rem;}
 .garant-toggle.open .gt-arrow{transform:rotate(180deg);}
-.garant-form{display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:10px;}
+.garant-form{display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
 .garant-form.show{display:block;animation:fadeUp 0.2s ease;}
-.garant-section-title{font-size:0.67rem;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
-.garant-upload{border:1.5px dashed var(--border);border-radius:8px;padding:11px;text-align:center;cursor:pointer;font-size:0.7rem;color:var(--muted);transition:all 0.2s;margin-top:6px;}
+.garant-section-title{font-size:0.68rem;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
+.garant-upload{border:1.5px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:0.72rem;color:var(--muted);transition:all 0.2s;margin-top:8px;}
 .garant-upload:hover{border-color:var(--violet);color:var(--violet);}
-.garant-files{margin-top:7px;display:flex;flex-direction:column;gap:4px;}
+.garant-files{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
 #garantFileInput{display:none;}
 
-.btn-main{width:100%;background:var(--violet);color:#fff;border:none;border-radius:10px;padding:13px 24px;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;box-shadow:0 2px 8px rgba(79,70,229,0.28);}
+.btn-main{width:100%;background:var(--violet);color:#fff;border:none;border-radius:10px;padding:13px 24px;font-family:'Instrument Sans',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;box-shadow:0 2px 8px rgba(79,70,229,0.3);}
 .btn-main:hover:not(:disabled){background:var(--violet-dark);transform:translateY(-1px);}
 .btn-main:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-.err{background:var(--red-light);border:1px solid #f5c6c2;border-radius:9px;padding:10px 13px;font-size:0.8rem;color:var(--red);display:none;margin-top:10px;}
+.err{background:var(--red-light);border:1px solid #f5c6c2;border-radius:9px;padding:11px 14px;font-size:0.82rem;color:var(--red);display:none;margin-top:10px;}
 .err.show{display:block;}
 
 /* LOADER */
+#loaderCard{display:none;}
 .loader-inner{display:flex;flex-direction:column;align-items:center;gap:14px;padding:52px 24px;text-align:center;}
-.spin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin 0.75s linear infinite;}
-.loader-txt{font-size:0.83rem;color:var(--muted);font-weight:500;}
-.loader-step{font-size:0.76rem;color:var(--violet);animation:blink 1.5s ease infinite;}
+.spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--violet);border-radius:50%;animation:spin 0.75s linear infinite;}
+.loader-txt{font-size:0.85rem;color:var(--muted);font-weight:500;}
+.loader-step{font-size:0.78rem;color:var(--violet);animation:blink 1.5s ease infinite;}
 
 /* RESULT */
-.source-tag{display:inline-flex;align-items:center;gap:5px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:6px;padding:3px 9px;font-size:0.68rem;font-weight:600;color:var(--violet-dark);margin-top:5px;}
-.res-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--border);}
-.res-name{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:700;color:var(--black);margin-bottom:3px;}
-.res-prop{font-size:0.76rem;color:var(--muted);}
-.score-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;}
-.score-ring{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;}
+#resultCard{display:none;}
+#resultCard.show{display:block;}
+.source-tag{display:inline-flex;align-items:center;gap:5px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:6px;padding:3px 9px;font-size:0.7rem;font-weight:600;color:var(--violet-dark);margin-top:6px;}
+.res-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+.res-name{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--black);margin-bottom:4px;}
+.res-prop{font-size:0.78rem;color:var(--muted);}
+.score-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+.score-ring{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;}
 .score-ring.g{background:var(--green-light);color:var(--green);border:3px solid var(--green);}
 .score-ring.o{background:var(--orange-light);color:var(--orange);border:3px solid var(--orange);}
 .score-ring.r{background:var(--red-light);color:var(--red);border:3px solid var(--red);}
-.score-lbl{font-size:0.66rem;color:var(--muted);font-weight:500;}
-.sec-title{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:9px;}
-.metrics-res{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
-.met{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px;}
-.met-lbl{font-size:0.68rem;color:var(--muted);margin-bottom:3px;}
-.met-val{font-size:0.92rem;font-weight:600;}
+.score-lbl{font-size:0.68rem;color:var(--muted);font-weight:500;}
+.sec-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.met{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;}
+.met-lbl{font-size:0.7rem;color:var(--muted);margin-bottom:3px;}
+.met-val{font-size:0.95rem;font-weight:600;}
 .met-val.g{color:var(--green);}
 .met-val.o{color:var(--orange);}
 .met-val.r{color:var(--red);}
-.effort-wrap{margin-top:8px;}
-.effort-top{display:flex;justify-content:space-between;font-size:0.68rem;color:var(--muted);margin-bottom:4px;}
-.effort-bg{height:6px;background:var(--border);border-radius:4px;overflow:hidden;}
+.effort-wrap{margin-top:10px;}
+.effort-top{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:5px;}
+.effort-bg{height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
 .effort-fill{height:100%;border-radius:4px;width:0%;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
-.pieces-list{display:flex;flex-direction:column;gap:6px;}
-.piece-row{display:flex;align-items:center;gap:8px;font-size:0.78rem;}
+.pieces-list{display:flex;flex-direction:column;gap:7px;}
+.piece-row{display:flex;align-items:center;gap:9px;font-size:0.8rem;}
 .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .pdot.ok{background:var(--green);}
 .pdot.partial{background:var(--orange);}
 .pdot.missing{background:var(--red);}
 .pname{flex:1;}
-.ptag{font-size:0.66rem;font-weight:600;padding:2px 7px;border-radius:5px;}
+.ptag{font-size:0.68rem;font-weight:600;padding:2px 7px;border-radius:5px;}
 .ptag.ok{background:var(--green-light);color:var(--green);}
 .ptag.partial{background:var(--orange-light);color:var(--orange);}
 .ptag.missing{background:var(--red-light);color:var(--red);}
-.summary-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:13px;font-size:0.8rem;line-height:1.75;color:var(--text);}
-.verdict{border-radius:10px;padding:13px 15px;display:flex;align-items:flex-start;gap:10px;}
+.summary-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:14px;font-size:0.82rem;line-height:1.75;color:var(--text);}
+.verdict{border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;}
 .verdict.g{background:var(--green-light);border:1px solid #a8d5bc;}
 .verdict.o{background:var(--orange-light);border:1px solid #f0d080;}
 .verdict.r{background:var(--red-light);border:1px solid #f5c6c2;}
-.v-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px;}
-.v-txt{font-size:0.8rem;line-height:1.6;}
-.v-txt strong{display:block;font-size:0.86rem;margin-bottom:2px;}
+.v-icon{font-size:1.15rem;flex-shrink:0;margin-top:1px;}
+.v-txt{font-size:0.82rem;line-height:1.6;}
+.v-txt strong{display:block;font-size:0.88rem;margin-bottom:2px;}
 .verdict.g .v-txt strong{color:var(--green);}
 .verdict.o .v-txt strong{color:var(--orange);}
 .verdict.r .v-txt strong{color:var(--red);}
-
-/* NOTES INTERNES */
-.notes-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
-.notes-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
-.notes-textarea{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.8rem;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.2s;resize:vertical;min-height:80px;line-height:1.6;}
-.notes-textarea:focus{border-color:var(--violet);}
-.notes-save{background:var(--violet-light);color:var(--violet);border:1px solid var(--violet-mid);border-radius:7px;padding:6px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;margin-top:6px;transition:all 0.2s;}
-.notes-save:hover{background:var(--violet);color:#fff;}
-.notes-saved{font-size:0.7rem;color:var(--green);margin-left:8px;opacity:0;transition:opacity 0.3s;}
-.notes-saved.show{opacity:1;}
-
-.res-actions{display:flex;gap:7px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;}
-.btn-sec{flex:1;min-width:80px;background:var(--bg);color:var(--text);border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.res-actions{display:flex;gap:8px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+.btn-sec{flex:1;background:var(--bg);color:var(--text);border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .btn-sec:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-light);}
-.btn-pdf{flex:1;min-width:80px;background:var(--violet);color:#fff;border:none;border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.btn-pdf{flex:1;background:var(--violet);color:#fff;border:none;border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .btn-pdf:hover{background:var(--violet-dark);transform:translateY(-1px);}
-
-/* BOUTON MAIL CANDIDAT */
-.btn-mail-candidat{width:100%;background:var(--green-light);color:var(--green);border:1.5px solid #a8d5bc;border-radius:10px;padding:12px 16px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
-.btn-mail-candidat:hover{background:var(--green);color:#fff;border-color:var(--green);}
-
-/* BOUTON PARTAGE */
-.btn-partager{width:100%;background:var(--violet-light);color:var(--violet);border:1.5px solid var(--violet-mid);border-radius:10px;padding:12px 16px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
-.btn-partager:hover{background:var(--violet);color:#fff;border-color:var(--violet);}
-
-/* COMPARAISON */
-.compare-banner{background:linear-gradient(135deg,var(--violet-light),#ddd6fe);border:1px solid var(--violet-mid);border-radius:11px;padding:12px 15px;margin-top:12px;display:none;}
-.compare-banner.show{display:block;}
-.compare-banner-title{font-size:0.78rem;font-weight:700;color:var(--violet-dark);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.compare-card{background:var(--white);border-radius:9px;padding:10px 12px;border:1px solid var(--violet-mid);}
-.compare-name{font-size:0.75rem;font-weight:700;color:var(--black);margin-bottom:3px;}
-.compare-score{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;}
-.compare-score.g{color:var(--green);}
-.compare-score.o{color:var(--orange);}
-.compare-score.r{color:var(--red);}
-.compare-detail{font-size:0.68rem;color:var(--muted);}
-.btn-compare{background:var(--violet);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;margin-top:8px;transition:all 0.2s;}
-.btn-compare:hover{background:var(--violet-dark);}
-.btn-compare-clear{background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;margin-top:8px;margin-left:6px;transition:all 0.2s;}
-.btn-compare-clear:hover{color:var(--red);border-color:var(--red);}
-
-.rs{margin-bottom:16px;}
-.empty-state{text-align:center;padding:52px 28px;}
-.empty-state .es-icon{font-size:2.6rem;margin-bottom:12px;}
-.empty-state h3{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--black);margin-bottom:6px;}
-.empty-state p{font-size:0.8rem;color:var(--muted);line-height:1.7;}
+.rs{margin-bottom:18px;}
+.empty-state{text-align:center;padding:56px 32px;}
+.empty-state .es-icon{font-size:2.8rem;margin-bottom:14px;}
+.empty-state h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--black);margin-bottom:6px;}
+.empty-state p{font-size:0.82rem;color:var(--muted);line-height:1.7;}
 
 /* TRUST BADGES */
-.trust-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
-.trust-badge{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;flex:1;min-width:130px;}
-.trust-icon{font-size:0.95rem;flex-shrink:0;}
-.trust-text strong{display:block;font-size:0.68rem;font-weight:700;color:var(--black);}
-.trust-text span{font-size:0.6rem;color:var(--muted);}
+.trust-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.trust-badge{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 12px;flex:1;min-width:140px;}
+.trust-icon{font-size:1rem;flex-shrink:0;}
+.trust-text strong{display:block;font-size:0.7rem;font-weight:700;color:var(--black);}
+.trust-text span{font-size:0.62rem;color:var(--muted);}
 .anthropic-badge{background:#fffbeb;border-color:#fde68a;}
 .anthropic-badge .trust-text strong{color:#92400e;}
-
-/* PARTAGE POPUP */
-.share-popup-wrap{position:fixed;bottom:28px;right:28px;z-index:300;display:none;animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);}
-.share-popup-wrap.show{display:block;}
-.share-popup{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-lg);max-width:300px;position:relative;}
-.share-popup-close{position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.95rem;}
-.share-popup h4{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700;color:var(--black);margin-bottom:4px;}
-.share-popup p{font-size:0.73rem;color:var(--muted);margin-bottom:12px;line-height:1.5;}
-.share-btns{display:flex;gap:6px;flex-wrap:wrap;}
-.share-btn{display:flex;align-items:center;gap:5px;padding:7px 11px;border-radius:8px;font-family:'Instrument Sans',sans-serif;font-size:0.7rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
-.share-btn.email{background:var(--violet-light);color:var(--violet);}
-.share-btn.email:hover{background:var(--violet);color:#fff;}
-.share-btn.copy{background:var(--bg);color:var(--text);border:1.5px solid var(--border);}
-.share-btn.copy:hover{border-color:var(--violet);color:var(--violet);}
-.share-btn.wa{background:var(--green-light);color:var(--green);}
-.share-btn.wa:hover{background:var(--green);color:#fff;}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(12,11,30,0.72);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.show{display:flex;}
-.modal{background:var(--white);border-radius:22px;max-width:860px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);}
-.modal-top{background:linear-gradient(135deg,#4f46e5,#3730a3);padding:36px 36px 28px;border-radius:22px 22px 0 0;text-align:center;position:relative;}
-.modal-top-icon{font-size:2.2rem;margin-bottom:10px;}
-.modal-top h2{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:6px;}
-.modal-top p{font-size:0.86rem;color:rgba(255,255,255,0.75);max-width:460px;margin:0 auto;line-height:1.6;}
-.modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.modal{background:var(--white);border-radius:24px;max-width:900px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+.modal-top{background:linear-gradient(135deg,#4f46e5,#3730a3);padding:40px 40px 32px;border-radius:24px 24px 0 0;text-align:center;position:relative;}
+.modal-top-icon{font-size:2.5rem;margin-bottom:12px;}
+.modal-top h2{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:8px;}
+.modal-top p{font-size:0.9rem;color:rgba(255,255,255,0.75);max-width:480px;margin:0 auto;line-height:1.6;}
+.modal-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 .modal-close:hover{background:rgba(255,255,255,0.25);}
-.modal-body{padding:28px 36px 36px;}
-.modal-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
-.mplan{border:1.5px solid var(--border);border-radius:14px;padding:22px 18px;position:relative;transition:all 0.25s;}
-.mplan:hover{border-color:var(--violet);transform:translateY(-2px);box-shadow:var(--shadow);}
+.modal-body{padding:32px 40px 40px;}
+.modal-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
+.mplan{border:1.5px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;transition:all 0.25s;}
+.mplan:hover{border-color:var(--violet);transform:translateY(-3px);box-shadow:var(--shadow);}
 .mplan.featured{background:linear-gradient(160deg,#4f46e5,#3730a3);border-color:transparent;color:#fff;}
-.mplan-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:3px 11px;border-radius:20px;white-space:nowrap;}
-.mplan-name{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.mplan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;}
+.mplan-name{font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .mplan.featured .mplan-name{color:rgba(255,255,255,0.6);}
-.mplan-price{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:2px;}
+.mplan-price{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:2px;}
 .mplan.featured .mplan-price{color:#fff;}
-.mplan-period{font-size:0.7rem;color:var(--muted);margin-bottom:12px;}
+.mplan-period{font-size:0.72rem;color:var(--muted);margin-bottom:14px;}
 .mplan.featured .mplan-period{color:rgba(255,255,255,0.55);}
-.mplan-features{list-style:none;display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
-.mplan-features li{display:flex;align-items:flex-start;gap:6px;font-size:0.76rem;color:var(--text);line-height:1.4;}
+.mplan-features{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.mplan-features li{display:flex;align-items:flex-start;gap:7px;font-size:0.78rem;color:var(--text);line-height:1.4;}
 .mplan.featured .mplan-features li{color:rgba(255,255,255,0.85);}
-.mcheck{color:var(--green);font-size:0.72rem;flex-shrink:0;margin-top:1px;}
+.mcheck{color:var(--green);font-size:0.75rem;flex-shrink:0;margin-top:1px;}
 .mplan.featured .mcheck{color:#86efac;}
-.mplan-btn{width:100%;padding:10px;border-radius:9px;font-family:'Instrument Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
+.mplan-btn{width:100%;padding:11px;border-radius:9px;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
 .mplan-btn.outline{background:transparent;color:var(--violet);border:1.5px solid var(--violet);}
 .mplan-btn.outline:hover{background:var(--violet-light);}
 .mplan-btn.solid{background:#fff;color:var(--violet-dark);}
 .mplan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .mplan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
-.modal-footer{text-align:center;font-size:0.76rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;}
-.reset-credits-wrap{text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
-.btn-reset-credits{background:none;border:1.5px dashed var(--border);border-radius:9px;padding:7px 16px;font-family:'Instrument Sans',sans-serif;font-size:0.73rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
-.btn-reset-credits:hover{border-color:var(--violet);color:var(--violet);}
+.modal-footer{text-align:center;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
+
+/* SHARE POPUP */
+.share-popup-wrap{position:fixed;bottom:32px;right:32px;z-index:300;display:none;animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.share-popup-wrap.show{display:block;}
+.share-popup{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow-lg);max-width:320px;position:relative;}
+.share-popup-close{position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;}
+.share-popup h4{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:var(--black);margin-bottom:4px;}
+.share-popup p{font-size:0.75rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.share-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.share-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-family:'Instrument Sans',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+.share-btn.email{background:var(--violet-light);color:var(--violet);}
+.share-btn.email:hover{background:var(--violet);color:#fff;}
+.share-btn.copy{background:var(--bg);color:var(--text);border:1.5px solid var(--border);}
+.share-btn.copy:hover{border-color:var(--violet);color:var(--violet);}
+.share-btn.wa{background:#e8f5ee;color:var(--green);}
+.share-btn.wa:hover{background:var(--green);color:#fff;}
 
 /* HISTORIQUE */
 #pageHistory{background:var(--bg);}
-.history-wrap{max-width:1000px;margin:0 auto;padding:36px 24px 80px;}
-.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
-.history-header h1{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;}
-.history-filters{display:flex;gap:7px;flex-wrap:wrap;}
-.filter-btn{padding:7px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-family:'Instrument Sans',sans-serif;font-size:0.73rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.history-wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px;}
+.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.history-header h1{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;}
+.history-filters{display:flex;gap:8px;flex-wrap:wrap;}
+.filter-btn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
 .filter-btn:hover,.filter-btn.active{background:var(--violet-light);border-color:var(--violet);color:var(--violet);}
 .filter-btn.fav.active{background:var(--green-light);border-color:var(--green);color:var(--green);}
 .filter-btn.res.active{background:var(--orange-light);border-color:var(--orange);color:var(--orange);}
 .filter-btn.nok.active{background:var(--red-light);border-color:var(--red);color:var(--red);}
-.history-empty{text-align:center;padding:72px 28px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);}
+.history-empty{text-align:center;padding:80px 32px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);}
+.history-empty .es-icon{font-size:3rem;margin-bottom:16px;}
+.history-empty h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--black);margin-bottom:8px;}
+.history-empty p{font-size:0.82rem;color:var(--muted);line-height:1.7;max-width:320px;margin:0 auto 20px;}
 .history-table{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);}
-.history-table-head{display:grid;grid-template-columns:1fr 1.4fr 0.7fr 0.7fr 0.7fr 0.6fr auto;gap:0;padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
-.history-row{display:grid;grid-template-columns:1fr 1.4fr 0.7fr 0.7fr 0.7fr 0.6fr auto;gap:0;padding:13px 18px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.15s;}
+.history-table-head{display:grid;grid-template-columns:1fr 1.4fr 0.8fr 0.8fr 0.7fr 0.6fr auto;gap:0;padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.history-row{display:grid;grid-template-columns:1fr 1.4fr 0.8fr 0.8fr 0.7fr 0.6fr auto;gap:0;padding:14px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.15s;}
 .history-row:last-child{border-bottom:none;}
 .history-row:hover{background:var(--bg);}
-.hr-name{font-weight:600;font-size:0.83rem;color:var(--black);}
-.hr-prop{font-size:0.73rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hr-score{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;}
+.hr-name{font-weight:600;font-size:0.85rem;color:var(--black);}
+.hr-prop{font-size:0.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hr-score{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;}
 .hr-score.g{color:var(--green);}
 .hr-score.o{color:var(--orange);}
 .hr-score.r{color:var(--red);}
-.hr-effort{font-size:0.78rem;font-weight:500;}
-.hr-date{font-size:0.7rem;color:var(--muted);}
-.verdict-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;font-size:0.66rem;font-weight:700;}
+.hr-effort{font-size:0.8rem;font-weight:500;}
+.hr-date{font-size:0.72rem;color:var(--muted);}
+.verdict-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:0.68rem;font-weight:700;}
 .verdict-badge.g{background:var(--green-light);color:var(--green);}
 .verdict-badge.o{background:var(--orange-light);color:var(--orange);}
 .verdict-badge.r{background:var(--red-light);color:var(--red);}
-.hr-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:5px 6px;border-radius:6px;font-size:0.73rem;transition:all 0.15s;}
+.hr-del{background:none;border:none;cursor:pointer;color:var(--muted);padding:5px 7px;border-radius:6px;font-size:0.75rem;transition:all 0.15s;}
 .hr-del:hover{background:#fee2e2;color:var(--red);}
-.history-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
-.btn-danger{background:var(--red-light);color:var(--red);border:1.5px solid #f5c6c2;border-radius:9px;padding:8px 15px;font-family:'Instrument Sans',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.history-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.btn-danger{background:var(--red-light);color:var(--red);border:1.5px solid #f5c6c2;border-radius:9px;padding:8px 16px;font-family:'Instrument Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
 .btn-danger:hover{background:var(--red);color:#fff;}
 
-/* TARIFS */
-#pagePricing{background:linear-gradient(160deg,#f0f1fa 0%,#eef2ff 100%);}
-.pricing-wrap{max-width:1060px;margin:0 auto;padding:64px 24px 100px;}
-.pricing-hero{text-align:center;margin-bottom:56px;}
-.pricing-eyebrow{display:inline-block;font-size:0.73rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--violet);background:var(--violet-light);border:1px solid var(--violet-mid);padding:5px 14px;border-radius:20px;margin-bottom:18px;}
-.pricing-hero h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:800;color:var(--black);letter-spacing:-0.04em;line-height:1.1;margin-bottom:14px;}
-.pricing-hero p{font-size:0.95rem;color:var(--muted);max-width:460px;margin:0 auto;line-height:1.7;}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:44px;}
-.plan{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:30px 26px;box-shadow:var(--shadow-sm);position:relative;transition:transform 0.25s,box-shadow 0.25s;}
+/* PRICING */
+#pagePricing{background:linear-gradient(160deg,#f5f5ff 0%,#eef2ff 100%);}
+.pricing-wrap{max-width:1080px;margin:0 auto;padding:72px 24px 100px;}
+.pricing-hero{text-align:center;margin-bottom:64px;}
+.pricing-eyebrow{display:inline-block;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--violet);background:var(--violet-light);border:1px solid var(--violet-mid);padding:5px 14px;border-radius:20px;margin-bottom:20px;}
+.pricing-hero h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;color:var(--black);letter-spacing:-0.04em;line-height:1.1;margin-bottom:16px;}
+.pricing-hero p{font-size:1rem;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7;}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px;}
+.plan{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:32px 28px;box-shadow:var(--shadow-sm);position:relative;transition:transform 0.25s,box-shadow 0.25s;}
 .plan:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
 .plan.featured{background:linear-gradient(160deg,#4f46e5,#3730a3);border-color:transparent;color:#fff;box-shadow:var(--shadow-lg);transform:scale(1.03);}
 .plan.featured:hover{transform:scale(1.03) translateY(-4px);}
-.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.66rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 13px;border-radius:20px;}
-.plan-name{font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#818cf8;color:#fff;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 14px;border-radius:20px;}
+.plan-name{font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
 .plan.featured .plan-name{color:rgba(255,255,255,0.65);}
-.plan-price{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:4px;letter-spacing:-0.04em;}
+.plan-price{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--black);line-height:1;margin-bottom:4px;letter-spacing:-0.04em;}
 .plan.featured .plan-price{color:#fff;}
-.plan-period{font-size:0.76rem;color:var(--muted);margin-bottom:7px;}
+.plan-period{font-size:0.78rem;color:var(--muted);margin-bottom:8px;}
 .plan.featured .plan-period{color:rgba(255,255,255,0.6);}
-.plan-desc{font-size:0.8rem;color:var(--muted);line-height:1.6;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.plan-desc{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);}
 .plan.featured .plan-desc{color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.15);}
-.plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:26px;}
-.plan-features li{display:flex;align-items:flex-start;gap:8px;font-size:0.8rem;color:var(--text);line-height:1.4;}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.plan-features li{display:flex;align-items:flex-start;gap:9px;font-size:0.83rem;color:var(--text);line-height:1.4;}
 .plan.featured .plan-features li{color:rgba(255,255,255,0.85);}
-.feat-check{width:17px;height:17px;background:var(--violet-light);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--violet);font-size:0.62rem;flex-shrink:0;margin-top:1px;}
+.feat-check{width:18px;height:18px;background:var(--violet-light);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--violet);font-size:0.65rem;flex-shrink:0;margin-top:1px;}
 .plan.featured .feat-check{background:rgba(255,255,255,0.2);color:#fff;}
-.plan-btn{width:100%;padding:12px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
+.plan-btn{width:100%;padding:13px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;text-decoration:none;display:block;text-align:center;box-sizing:border-box;}
 .plan-btn.outline{background:transparent;color:var(--violet);border:1.5px solid var(--violet);}
 .plan-btn.outline:hover{background:var(--violet-light);}
 .plan-btn.solid{background:var(--white);color:var(--violet-dark);}
 .plan-btn.solid:hover{background:var(--bg);}
 .plan-btn.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
 .plan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
-.waitlist-card{background:linear-gradient(135deg,#0c0b1e,#1e1b4b);border-radius:18px;padding:36px;text-align:center;color:#fff;margin-bottom:36px;}
-.waitlist-card h2{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:7px;}
-.waitlist-card p{font-size:0.82rem;color:rgba(255,255,255,0.65);margin-bottom:22px;line-height:1.6;}
-.waitlist-form{display:flex;gap:8px;max-width:420px;margin:0 auto;}
-.waitlist-input{flex:1;padding:11px 15px;border-radius:10px;border:none;font-family:'Instrument Sans',sans-serif;font-size:0.83rem;outline:none;color:var(--text);}
-.waitlist-btn{background:var(--violet);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+
+/* WAITLIST */
+.waitlist-card{background:linear-gradient(135deg,#0c0b1e,#1e1b4b);border-radius:20px;padding:40px;text-align:center;color:#fff;margin-bottom:40px;}
+.waitlist-card h2{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:8px;}
+.waitlist-card p{font-size:0.85rem;color:rgba(255,255,255,0.65);margin-bottom:24px;line-height:1.6;}
+.waitlist-form{display:flex;gap:8px;max-width:440px;margin:0 auto;}
+.waitlist-input{flex:1;padding:12px 16px;border-radius:10px;border:none;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;outline:none;color:var(--text);}
+.waitlist-btn{background:var(--violet);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
 .waitlist-btn:hover{background:#6366f1;}
-.waitlist-note{font-size:0.66rem;color:rgba(255,255,255,0.4);margin-top:9px;}
-.guarantee{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:28px 36px;display:flex;align-items:center;gap:22px;box-shadow:var(--shadow-sm);margin-bottom:44px;}
-.guarantee-icon{width:52px;height:52px;background:var(--violet-light);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
-.guarantee h3{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:5px;}
-.guarantee p{font-size:0.8rem;color:var(--muted);line-height:1.7;}
-.faq-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:20px;text-align:center;}
-.faqs{display:flex;flex-direction:column;gap:7px;max-width:700px;margin:0 auto;}
-.faq-item{background:var(--white);border:1px solid var(--border);border-radius:11px;overflow:hidden;}
-.faq-q{width:100%;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;text-align:left;font-family:'Instrument Sans',sans-serif;font-size:0.86rem;font-weight:600;color:var(--text);transition:background 0.15s;}
+.waitlist-note{font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:10px;}
+
+.guarantee{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px 40px;display:flex;align-items:center;gap:24px;box-shadow:var(--shadow-sm);margin-bottom:48px;}
+.guarantee-icon{width:56px;height:56px;background:var(--violet-light);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
+.guarantee h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px;}
+.guarantee p{font-size:0.83rem;color:var(--muted);line-height:1.7;}
+.faq-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--black);letter-spacing:-0.03em;margin-bottom:24px;text-align:center;}
+.faqs{display:flex;flex-direction:column;gap:8px;max-width:720px;margin:0 auto;}
+.faq-item{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.faq-q{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;text-align:left;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;color:var(--text);transition:background 0.15s;}
 .faq-q:hover{background:var(--bg);}
-.faq-icon{color:var(--violet);font-size:1.1rem;flex-shrink:0;transition:transform 0.25s;}
+.faq-icon{color:var(--violet);font-size:1.2rem;flex-shrink:0;transition:transform 0.25s;}
 .faq-item.open .faq-icon{transform:rotate(45deg);}
-.faq-a{display:none;padding:0 18px 14px;font-size:0.8rem;color:var(--muted);line-height:1.8;}
+.faq-a{display:none;padding:0 20px 16px;font-size:0.82rem;color:var(--muted);line-height:1.8;}
 .faq-item.open .faq-a{display:block;}
 
-footer{background:#1a1a2e;padding:20px 28px;text-align:center;border-top:2px solid #2d2d4e;}
-footer p{margin:0 0 4px;font-family:'Instrument Sans',sans-serif;font-size:13px;color:#c8a96e;}
+/* CONTACT RESEAU MODAL */
+.contact-modal{background:var(--white);border-radius:20px;max-width:480px;width:100%;padding:36px;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
+.contact-modal h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--black);margin-bottom:8px;}
+.contact-modal p{font-size:0.83rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.contact-modal .fi{margin-bottom:10px;}
+.contact-modal textarea{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;resize:vertical;min-height:80px;margin-bottom:10px;}
+.contact-modal textarea:focus{border-color:var(--violet);}
+
+footer{background:#1a1a2e;padding:20px 32px;text-align:center;border-top:2px solid #2d5a3d;}
+footer p{margin:0 0 4px 0;font-family:'Instrument Sans',sans-serif;font-size:13px;color:#c8a96e;}
 footer p a{color:#ffffff;text-decoration:none;font-weight:500;}
 footer small{font-size:11px;color:#888;}
 
@@ -466,25 +380,25 @@ footer small{font-size:11px;color:#888;}
 @media(max-width:900px){
   .plans,.modal-plans{grid-template-columns:1fr;}
   .plan.featured{transform:none;}
-  nav{padding:0 14px;}
+  nav{padding:0 16px;}
   .nav-links{display:none;}
+  .burger{display:flex;}
   .tool-grid{grid-template-columns:1fr;}
   .kpi-row{grid-template-columns:1fr 1fr;}
   .guarantee{flex-direction:column;text-align:center;}
-  .modal-body{padding:20px 18px 24px;}
-  .modal-top{padding:24px 20px 20px;}
+  .modal-body{padding:24px 20px 28px;}
+  .modal-top{padding:28px 24px 24px;}
   .pieces-grid{grid-template-columns:repeat(2,1fr);}
-  .share-popup-wrap{bottom:14px;right:14px;left:14px;}
+  .share-popup-wrap{bottom:16px;right:16px;left:16px;}
   .waitlist-form{flex-direction:column;}
   .credits-badge span{display:none;}
   .history-table-head,.history-row{grid-template-columns:1fr 1fr 0.6fr 0.6fr auto;}
   .hr-prop,.hr-effort{display:none;}
   .history-stats{grid-template-columns:1fr 1fr;}
-  .res-actions{flex-wrap:wrap;}
-  .hero-section h1{font-size:32px;}
+  .modal-plans{grid-template-columns:1fr;}
 }
 @media print{
-  nav,.tool-header,.kpi-row,#leftCol,.res-actions,.share-popup-wrap{display:none !important;}
+  nav,.tool-header,.kpi-row,#leftCol,.res-actions,#sharePopup,.live-banner{display:none !important;}
   .tool-grid{grid-template-columns:1fr;}
   #resultCard{display:block !important;}
 }
@@ -492,14 +406,12 @@ footer small{font-size:11px;color:#888;}
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <a class="nav-logo" href="#" onclick="showPage('landing');return false;">
+  <a class="nav-logo" href="#" onclick="showPage('tool');return false;">
     <div class="logo-badge">LK</div>Lokify
   </a>
   <div class="nav-links">
-    <button class="nav-link" id="navLanding" onclick="showPage('landing')">Accueil</button>
-    <button class="nav-link" id="navTool" onclick="showPage('tool')">Analyser</button>
+    <button class="nav-link active" id="navTool" onclick="showPage('tool')">Analyser un dossier</button>
     <button class="nav-link" id="navHistory" onclick="showPage('history')">📋 Historique</button>
     <button class="nav-link" id="navPricing" onclick="showPage('pricing')">Tarifs</button>
   </div>
@@ -509,10 +421,20 @@ footer small{font-size:11px;color:#888;}
       <span id="creditsText">5 analyses gratuites</span>
     </div>
     <button class="nav-cta" onclick="showPage('pricing')">Voir les offres</button>
+    <button class="burger" id="burgerBtn" onclick="toggleMobileMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
-<!-- MODAL UPGRADE -->
+<!-- MENU MOBILE -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="nav-link" onclick="showPage('tool');toggleMobileMenu()">🔍 Analyser un dossier</button>
+  <button class="nav-link" onclick="showPage('history');toggleMobileMenu()">📋 Historique</button>
+  <button class="nav-link" onclick="showPage('pricing');toggleMobileMenu()">💎 Tarifs</button>
+</div>
+
+<!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
   <div class="modal">
     <div class="modal-top">
@@ -538,7 +460,7 @@ footer small{font-size:11px;color:#888;}
         <div class="mplan featured">
           <div class="mplan-badge">⭐ Le plus populaire</div>
           <div class="mplan-name">Pro</div>
-          <div class="mplan-price">49€</div>
+          <div class="mplan-price">39€</div>
           <div class="mplan-period">par mois · sans engagement</div>
           <ul class="mplan-features">
             <li><span class="mcheck">✓</span><strong>Analyses illimitées</strong></li>
@@ -547,7 +469,7 @@ footer small{font-size:11px;color:#888;}
             <li><span class="mcheck">✓</span>Comparaison de candidats</li>
             <li><span class="mcheck">✓</span>Support prioritaire</li>
           </ul>
-          <a href="mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro." style="display:block;width:100%;padding:10px;border-radius:9px;background:#fff;color:#3730a3;font-family:'Instrument Sans',sans-serif;font-size:0.8rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">✉️ Nous contacter</a>
+          <a href="https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00" target="_blank" style="display:block;width:100%;padding:11px;border-radius:9px;background:#fff;color:#3730a3;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">💳 S'abonner — 39€/mois</a>
         </div>
         <div class="mplan">
           <div class="mplan-name">Réseau</div>
@@ -560,18 +482,29 @@ footer small{font-size:11px;color:#888;}
             <li><span class="mcheck">✓</span>Multi-utilisateurs</li>
             <li><span class="mcheck">✓</span>API disponible</li>
           </ul>
-          <button class="mplan-btn outline" onclick="alert('Contactez-nous : lokify.immo33@gmail.com')">Nous contacter</button>
+          <button class="mplan-btn outline" onclick="openReseauContact()">📧 Demander un devis</button>
         </div>
       </div>
       <div class="modal-footer">
-        <span>🔒 Paiement sécurisé</span>
+        <span>🔒 Paiement sécurisé Stripe</span>
         <span>🛡️ 14 jours satisfait ou remboursé</span>
         <span>❌ Sans engagement</span>
       </div>
-      <div class="reset-credits-wrap">
-        <button class="btn-reset-credits" onclick="resetCredits()">🔄 Réinitialiser mes analyses gratuites</button>
-      </div>
     </div>
+  </div>
+</div>
+
+<!-- RESEAU CONTACT MODAL -->
+<div class="modal-overlay" id="reseauModal">
+  <div class="contact-modal">
+    <button class="modal-close" style="position:absolute;top:16px;right:16px;background:var(--bg);border:none;color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;" onclick="closeModal('reseauModal')">✕</button>
+    <h3>Plan Réseau — Devis personnalisé</h3>
+    <p>Pour les réseaux d'agences. Dites-nous en plus sur votre structure et nous vous répondons sous 24h.</p>
+    <input class="fi" id="reseauNom" placeholder="Votre nom" style="margin-bottom:10px;"/>
+    <input class="fi" id="reseauAgence" placeholder="Nom de votre réseau / agence" style="margin-bottom:10px;"/>
+    <input class="fi" id="reseauEmail" type="email" placeholder="votre@email.fr" style="margin-bottom:10px;"/>
+    <textarea id="reseauMsg" placeholder="Nombre d'agences, besoins spécifiques..."></textarea>
+    <button class="btn-main" onclick="sendReseauContact()">📧 Envoyer ma demande</button>
   </div>
 </div>
 
@@ -579,149 +512,19 @@ footer small{font-size:11px;color:#888;}
 <div class="share-popup-wrap" id="sharePopup">
   <div class="share-popup">
     <button class="share-popup-close" onclick="document.getElementById('sharePopup').classList.remove('show')">✕</button>
-    <div style="font-size:1.4rem;margin-bottom:7px;">🎉</div>
+    <div style="font-size:1.5rem;margin-bottom:8px;">🎉</div>
     <h4>Dossier validé — partagez Lokify !</h4>
     <p>Gagnez du temps sur chaque dossier. Partagez avec vos collègues !</p>
     <div class="share-btns">
       <button class="share-btn email" onclick="window.location.href='mailto:?subject=Lokify%20-%20Analysez%20vos%20dossiers%20en%2030s&body=Bonjour%2C%20je%20vous%20recommande%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app'">✉️ Email</button>
       <button class="share-btn wa" onclick="window.open('https://wa.me/?text=Testez%20Lokify%20pour%20analyser%20vos%20dossiers%20locataires%20en%2030s%20par%20IA%20%3A%20https%3A%2F%2Flokify-immo.netlify.app')">💬 WhatsApp</button>
-      <button class="share-btn copy" id="copyBtn" onclick="copyLink()">🔗 Copier le lien</button>
+      <button class="share-btn copy" id="copyBtn" onclick="copyLink()">🔗 Copier</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- PAGE LANDING                               -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page active" id="pageLanding">
-  <div class="landing-wrap">
-
-    <!-- HERO -->
-    <div class="hero-section">
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
-        IA réelle — Lecture PDF activée
-      </div>
-      <h1>Analysez vos dossiers en <span class="accent">30 secondes.</span></h1>
-      <p>Lokify lit vos documents, calcule la solvabilité et vous donne une recommandation claire — sans effort de votre part.</p>
-      <div class="hero-ctas">
-        <button class="btn-hero-main" onclick="showPage('tool')">Analyser un dossier →</button>
-        <button class="btn-hero-sec" onclick="showPage('pricing')">Tarifs</button>
-      </div>
-    </div>
-
-    <!-- METRICS -->
-    <div class="metrics-grid">
-      <div class="metric-card dark">
-        <div class="metric-icon">⚡</div>
-        <div class="metric-val">−80%</div>
-        <div class="metric-label">Temps de traitement par dossier</div>
-      </div>
-      <div class="metric-card white">
-        <div class="metric-icon">🎯</div>
-        <div class="metric-val">Score</div>
-        <div class="metric-label">Solvabilité calculée en temps réel</div>
-      </div>
-      <div class="metric-card white">
-        <div class="metric-icon">🔍</div>
-        <div class="metric-val">Fraude</div>
-        <div class="metric-label">Détectée automatiquement par l'IA</div>
-      </div>
-      <div class="metric-card violet">
-        <div class="metric-icon">🛡️</div>
-        <div class="metric-val">RGPD</div>
-        <div class="metric-label">Données jamais stockées</div>
-      </div>
-    </div>
-
-    <!-- FEATURES -->
-    <div class="features-section">
-      <div class="section-eyebrow">Fonctionnalités</div>
-      <div class="section-heading">Tout ce qu'il vous faut.</div>
-      <div class="feature-cards">
-        <div class="feature-card">
-          <div class="feature-icon-box">✉️</div>
-          <div class="feature-text">
-            <h3>Mail candidat en un clic <span class="feature-new">NOUVEAU</span></h3>
-            <p>Après l'analyse, envoyez un récapitulatif pré-rédigé au candidat d'un simple clic.</p>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-box">⚖️</div>
-          <div class="feature-text">
-            <h3>Comparaison de candidats <span class="feature-new">NOUVEAU</span></h3>
-            <p>Comparez deux dossiers côte à côte pour décider en un coup d'œil.</p>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-box">📝</div>
-          <div class="feature-text">
-            <h3>Notes internes <span class="feature-new">NOUVEAU</span></h3>
-            <p>Annotez chaque dossier pour garder le contexte et travailler en équipe.</p>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-box">🔗</div>
-          <div class="feature-text">
-            <h3>Lien de partage <span class="feature-new">NOUVEAU</span></h3>
-            <p>Partagez un dossier analysé en un clic avec un propriétaire ou collègue.</p>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-box">📄</div>
-          <div class="feature-text">
-            <h3>Lecture réelle des PDFs</h3>
-            <p>L'IA lit et extrait les vraies données depuis vos documents — aucune saisie manuelle.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TRUST -->
-    <div class="trust-card">
-      <div class="trust-title">🔒 Vos données sont protégées</div>
-      <div class="trust-grid">
-        <div class="trust-item">
-          <div class="trust-item-icon">🗑️</div>
-          <h4>Non stockées</h4>
-          <p>Documents supprimés immédiatement après l'analyse.</p>
-        </div>
-        <div class="trust-item">
-          <div class="trust-item-icon">🇪🇺</div>
-          <h4>Conforme RGPD</h4>
-          <p>Hébergement Europe, traitement certifié.</p>
-        </div>
-        <div class="trust-item">
-          <div class="trust-item-icon">🔐</div>
-          <h4>HTTPS</h4>
-          <p>Toutes les données chiffrées en transit.</p>
-        </div>
-        <div class="trust-item">
-          <div class="trust-item-icon">🤖</div>
-          <h4>Claude / Anthropic</h4>
-          <p>IA de référence pour l'analyse de documents.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- CTA BAND -->
-    <div class="cta-band">
-      <h2>Prêt à gagner du temps ?</h2>
-      <p>5 analyses gratuites, sans carte bancaire.<br/>Résultat en 30 secondes.</p>
-      <button class="btn-cta-white" onclick="showPage('tool')">Commencer gratuitement →</button>
-    </div>
-
-    <div style="text-align:center;font-size:11px;color:var(--muted);padding:8px 0 4px;">
-      Lokify © 2025 · RGPD · Données non conservées · Hébergement Europe · Propulsé par Claude / Anthropic<br/>
-      <a href="mailto:lokify.immo33@gmail.com" style="color:var(--violet);text-decoration:none;">lokify.immo33@gmail.com</a>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- PAGE OUTIL                                 -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page" id="pageTool">
+<!-- PAGE OUTIL -->
+<div class="page active" id="pageTool">
   <div class="tool-wrap">
     <div class="tool-header">
       <div class="ai-badge"><div class="ai-dot"></div> IA réelle — Lecture PDF activée</div>
@@ -735,8 +538,6 @@ footer small{font-size:11px;color:#888;}
       <div class="kpi"><div class="kpi-val" style="color:var(--red)" id="kpiNok">0</div><div class="kpi-label">Défavorables</div></div>
     </div>
     <div class="tool-grid">
-
-      <!-- COLONNE GAUCHE -->
       <div id="leftCol">
         <div class="card">
           <div class="trial-banner" id="trialBanner">
@@ -782,12 +583,6 @@ footer small{font-size:11px;color:#888;}
           <div class="form-row">
             <div class="fg"><label class="fl">Prénom</label><input class="fi" id="fPrenom" placeholder="Jean"/></div>
             <div class="fg"><label class="fl">Nom</label><input class="fi" id="fNom" placeholder="Dupont"/></div>
-          </div>
-          <!-- EMAIL CANDIDAT (pour mail pré-rempli) -->
-          <div class="fg fg-email">
-            <label class="fl">Email du candidat <span style="color:var(--muted);font-weight:400;">(optionnel)</span></label>
-            <input class="fi" id="fEmail" type="email" placeholder="candidat@email.com"/>
-            <div class="email-hint">📧 Utilisé pour le mail de récapitulatif après analyse</div>
           </div>
           <div class="form-row">
             <div class="fg"><label class="fl">Loyer mensuel (€)</label><input class="fi" id="fLoyer" type="number" placeholder="900"/></div>
@@ -838,24 +633,21 @@ footer small{font-size:11px;color:#888;}
 
           <div class="err" id="errBox"></div>
           <button class="btn-main" id="btnAnalyze" onclick="analyze()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             Analyser ce dossier
           </button>
         </div>
       </div>
 
-      <!-- COLONNE DROITE -->
       <div id="rightCol">
-        <div class="card" id="loaderCard" style="display:none;">
+        <div class="card" id="loaderCard">
           <div class="loader-inner">
             <div class="spin"></div>
             <div class="loader-txt">Analyse en cours…</div>
             <div class="loader-step" id="loaderStep">Lecture des documents PDF</div>
           </div>
         </div>
-
-        <div class="card" id="resultCard" style="display:none;">
-          <!-- EN-TÊTE RÉSULTAT -->
+        <div class="card" id="resultCard">
           <div class="res-head">
             <div>
               <div class="res-name" id="rName">—</div>
@@ -867,11 +659,9 @@ footer small{font-size:11px;color:#888;}
               <div class="score-lbl">Score /100</div>
             </div>
           </div>
-
-          <!-- INDICATEURS -->
           <div class="rs">
             <div class="sec-title">Indicateurs financiers</div>
-            <div class="metrics-res">
+            <div class="metrics">
               <div class="met"><div class="met-lbl">Revenus nets réels</div><div class="met-val" id="mRevenu">—</div></div>
               <div class="met"><div class="met-lbl">Taux d'effort</div><div class="met-val" id="mEffort">—</div></div>
               <div class="met"><div class="met-lbl">Contrat</div><div class="met-val" id="mContrat">—</div></div>
@@ -882,29 +672,21 @@ footer small{font-size:11px;color:#888;}
               <div class="effort-bg"><div class="effort-fill" id="effortFill"></div></div>
             </div>
           </div>
-
-          <!-- GARANT -->
           <div class="rs" id="garantResultSection" style="display:none;">
             <div class="sec-title">Garant</div>
-            <div class="metrics-res">
+            <div class="metrics">
               <div class="met"><div class="met-lbl">Revenus garant</div><div class="met-val" id="mGRevenu">—</div></div>
               <div class="met"><div class="met-lbl">Revenus combinés</div><div class="met-val g" id="mGCombine">—</div></div>
             </div>
           </div>
-
-          <!-- PIÈCES -->
           <div class="rs">
             <div class="sec-title">Pièces du dossier</div>
             <div class="pieces-list" id="piecesList"></div>
           </div>
-
-          <!-- RÉSUMÉ -->
           <div class="rs">
             <div class="sec-title">Résumé du profil</div>
             <div class="summary-box" id="summaryBox"></div>
           </div>
-
-          <!-- RECOMMANDATION -->
           <div class="rs">
             <div class="sec-title">Recommandation</div>
             <div class="verdict" id="verdictBox">
@@ -912,56 +694,22 @@ footer small{font-size:11px;color:#888;}
               <div class="v-txt" id="vTxt"></div>
             </div>
           </div>
-
-          <!-- NOTES INTERNES -->
-          <div class="notes-section">
-            <div class="notes-label">📝 Notes internes</div>
-            <textarea class="notes-textarea" id="notesTextarea" placeholder="Ajoutez vos observations, remarques ou commentaires sur ce dossier…"></textarea>
-            <div style="display:flex;align-items:center;">
-              <button class="notes-save" onclick="saveNotes()">Enregistrer la note</button>
-              <span class="notes-saved" id="notesSaved">✓ Enregistré</span>
-            </div>
-          </div>
-
-          <!-- ACTIONS -->
           <div class="res-actions">
-            <button class="btn-pdf" onclick="downloadPDF()">📄 PDF</button>
+            <button class="btn-pdf" onclick="downloadPDF()">📄 Télécharger PDF</button>
             <button class="btn-sec" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn-sec" onclick="resetForm()">↺ Nouveau</button>
           </div>
-
-          <!-- BOUTON MAIL CANDIDAT -->
-          <button class="btn-mail-candidat" id="btnMailCandidat" onclick="sendMailCandidat()">
-            ✉️ Envoyer le récapitulatif au candidat
-          </button>
-
-          <!-- BOUTON PARTAGE DOSSIER -->
-          <button class="btn-partager" onclick="partagerDossier()">
-            🔗 Partager ce dossier
-          </button>
-
-          <!-- COMPARAISON -->
-          <div class="compare-banner" id="compareBanner">
-            <div class="compare-banner-title">⚖️ Comparaison de candidats</div>
-            <div class="compare-grid" id="compareGrid"></div>
-            <div style="margin-top:8px;">
-              <button class="btn-compare-clear" onclick="clearCompare()">✕ Effacer la comparaison</button>
-            </div>
-          </div>
-
-          <!-- TRUST -->
           <div class="trust-row">
-            <div class="trust-badge"><div class="trust-icon">🔒</div><div class="trust-text"><strong>Données sécurisées</strong><span>HTTPS · Non conservées</span></div></div>
-            <div class="trust-badge"><div class="trust-icon">🛡️</div><div class="trust-text"><strong>Conforme RGPD</strong><span>Hébergé en Europe</span></div></div>
-            <div class="trust-badge anthropic-badge"><div class="trust-icon">🤖</div><div class="trust-text"><strong>Propulsé par Claude</strong><span>Anthropic · Leader IA</span></div></div>
+            <div class="trust-badge"><div class="trust-icon">🔒</div><div class="trust-text"><strong>Données sécurisées</strong><span>HTTPS · Documents non conservés</span></div></div>
+            <div class="trust-badge"><div class="trust-icon">🛡️</div><div class="trust-text"><strong>Conforme RGPD</strong><span>Données hébergées en Europe</span></div></div>
+            <div class="trust-badge anthropic-badge"><div class="trust-icon">🤖</div><div class="trust-text"><strong>Propulsé par Claude</strong><span>Anthropic · Leader mondial IA</span></div></div>
           </div>
         </div>
-
         <div class="card" id="emptyCard">
           <div class="empty-state">
             <div class="es-icon">🏠</div>
             <h3>Prêt à analyser</h3>
-            <p>Déposez les pièces du candidat et<br/>remplissez le formulaire pour démarrer.</p>
+            <p>Déposez les pièces du candidat et<br>remplissez le formulaire pour démarrer.</p>
           </div>
         </div>
       </div>
@@ -969,15 +717,13 @@ footer small{font-size:11px;color:#888;}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- PAGE HISTORIQUE                            -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE HISTORIQUE -->
 <div class="page" id="pageHistory">
   <div class="history-wrap">
     <div class="history-header">
       <div>
         <h1>📋 Historique des analyses</h1>
-        <p style="font-size:0.8rem;color:var(--muted);margin-top:3px;">Retrouvez tous vos dossiers analysés</p>
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Retrouvez tous vos dossiers analysés</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <div class="history-filters">
@@ -994,14 +740,12 @@ footer small{font-size:11px;color:#888;}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- PAGE TARIFS                                -->
-<!-- ═══════════════════════════════════════════ -->
+<!-- PAGE TARIFS -->
 <div class="page" id="pagePricing">
   <div class="pricing-wrap">
     <div class="pricing-hero">
       <div class="pricing-eyebrow">Tarifs transparents</div>
-      <h1>Un abonnement simple,<br/>sans surprise</h1>
+      <h1>Un abonnement simple,<br>sans surprise</h1>
       <p>Commencez avec 5 analyses gratuites. Passez à Pro quand vous êtes prêt. Résiliez à tout moment.</p>
     </div>
     <div class="plans">
@@ -1022,7 +766,7 @@ footer small{font-size:11px;color:#888;}
       <div class="plan featured">
         <div class="plan-badge">⭐ Le plus populaire</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price">49€</div>
+        <div class="plan-price">39€</div>
         <div class="plan-period">par mois · sans engagement</div>
         <div class="plan-desc">Pour les agences actives qui traitent des dossiers régulièrement.</div>
         <ul class="plan-features">
@@ -1030,11 +774,10 @@ footer small{font-size:11px;color:#888;}
           <li><span class="feat-check">✓</span>Rapport PDF exportable</li>
           <li><span class="feat-check">✓</span>Historique des dossiers</li>
           <li><span class="feat-check">✓</span>Comparaison de candidats</li>
-          <li><span class="feat-check">✓</span>Mail récapitulatif candidat</li>
-          <li><span class="feat-check">✓</span>Notes internes & partage</li>
+          <li><span class="feat-check">✓</span>Alerte dossiers incomplets</li>
           <li><span class="feat-check">✓</span>Support prioritaire</li>
         </ul>
-        <a href="mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro." style="display:block;width:100%;padding:12px;border-radius:10px;background:#fff;color:#3730a3;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">✉️ Nous contacter</a>
+        <a href="https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00" target="_blank" class="plan-btn solid">💳 S'abonner — 39€/mois</a>
       </div>
       <div class="plan">
         <div class="plan-name">Réseau</div>
@@ -1049,18 +792,18 @@ footer small{font-size:11px;color:#888;}
           <li><span class="feat-check">✓</span>API disponible</li>
           <li><span class="feat-check">✓</span>Onboarding personnalisé</li>
         </ul>
-        <button class="plan-btn outline" onclick="window.location.href='mailto:lokify.immo33@gmail.com?subject=Lokify%20R%C3%A9seau'">Nous contacter</button>
+        <button class="plan-btn outline" onclick="openReseauContact()">📧 Demander un devis</button>
       </div>
     </div>
 
     <div class="waitlist-card">
       <h2>Rejoignez Lokify Pro en avant-première</h2>
-      <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité dès l'ouverture.</p>
+      <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité.</p>
       <div class="waitlist-form">
         <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr"/>
-        <a href="mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro." style="display:inline-block;background:var(--violet);color:#fff;border-radius:10px;padding:11px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.83rem;font-weight:700;text-decoration:none;white-space:nowrap;">✉️ Nous contacter</a>
+        <button class="waitlist-btn" onclick="submitWaitlist()">✉️ Nous rejoindre</button>
       </div>
-      <div class="waitlist-note">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
+      <div class="waitlist-note" id="waitlistNote">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
     </div>
 
     <div class="guarantee">
@@ -1070,7 +813,6 @@ footer small{font-size:11px;color:#888;}
         <p>Testez Lokify Pro sans risque. Si vous n'êtes pas convaincus, nous vous remboursons intégralement, sans question.</p>
       </div>
     </div>
-
     <div class="faq-title">Questions fréquentes</div>
     <div class="faqs">
       <div class="faq-item">
@@ -1087,44 +829,55 @@ footer small{font-size:11px;color:#888;}
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)"><span>Puis-je résilier à tout moment ?</span><span class="faq-icon">+</span></button>
-        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client en un clic. Votre accès reste actif jusqu'à la fin de la période payée.</div>
+        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client Stripe en un clic. Votre accès reste actif jusqu'à la fin de la période payée.</div>
       </div>
     </div>
   </div>
   <footer>
     <p>📧 Contact : <a href="mailto:lokify.immo33@gmail.com">lokify.immo33@gmail.com</a></p>
-    <small>Lokify — Analyse de dossiers locataires par intelligence artificielle · © 2025 Lokify · Tous droits réservés · RGPD · Données non conservées · Propulsé par Claude / Anthropic</small>
+    <small>Lokify — Analyse de dossiers locataires par intelligence artificielle · © 2025 Lokify · Tous droits réservés · RGPD · Propulsé par Claude / Anthropic</small>
   </footer>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- JAVASCRIPT                                 -->
-<!-- ═══════════════════════════════════════════ -->
 <script>
-const PROXY_URL = '/.netlify/functions/analyze';
-const MAX_FREE = 5;
-const STORAGE_KEY = 'lokify_analyses_used';
-const HISTORY_KEY = 'lokify_history';
-const NOTES_KEY = 'lokify_notes';
-const COMPARE_KEY = 'lokify_compare';
+const STRIPE_URL='https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00';
+const PROXY_URL='/.netlify/functions/analyze';
+const MAX_FREE=5;
+const STORAGE_KEY='lokify_analyses_used';
+const HISTORY_KEY='lokify_history';
 
-// ══ HISTORIQUE ══
-function getHistory(){try{const r=localStorage.getItem(HISTORY_KEY);return r?JSON.parse(r):[];}catch(e){return[];}}
+// ── BURGER MENU ──
+function toggleMobileMenu(){
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+// ── HISTORIQUE ──
+function getHistory(){
+  try{const raw=localStorage.getItem(HISTORY_KEY);return raw?JSON.parse(raw):[];}catch(e){return[];}
+}
 function saveHistory(h){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e){}}
 function addToHistory(entry){
   const h=getHistory();
   h.unshift({...entry,id:Date.now(),date:new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
-  saveHistory(h);
+  saveHistory(h);renderHistory();
 }
-function deleteFromHistory(id){saveHistory(getHistory().filter(e=>e.id!==id));renderHistory();}
+function deleteFromHistory(id){const h=getHistory().filter(e=>e.id!==id);saveHistory(h);renderHistory();}
 function clearHistory(){if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}}
+
+// ── KPIs depuis localStorage ──
+function syncKpisFromHistory(){
+  const h=getHistory();
+  document.getElementById('kpiTotal').textContent=h.length;
+  document.getElementById('kpiOk').textContent=h.filter(e=>e.verdict==='FAVORABLE').length;
+  document.getElementById('kpiRes').textContent=h.filter(e=>e.verdict==='FAVORABLE_RESERVE').length;
+  document.getElementById('kpiNok').textContent=h.filter(e=>e.verdict==='DEFAVORABLE').length;
+}
 
 let currentFilter='all';
 function filterHistory(f){
   currentFilter=f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  const map={all:'filterAll',FAVORABLE:'filterFav',FAVORABLE_RESERVE:'filterRes',DEFAVORABLE:'filterNok'};
-  document.getElementById(map[f]).classList.add('active');
+  document.getElementById('filter'+(f==='all'?'All':f==='FAVORABLE'?'Fav':f==='FAVORABLE_RESERVE'?'Res':'Nok')).classList.add('active');
   renderHistory();
 }
 function renderHistory(){
@@ -1135,40 +888,43 @@ function renderHistory(){
     <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">Total analysés</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--green)">${ok}</div><div class="kpi-label">Favorables</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--orange)">${res}</div><div class="kpi-label">Avec réserves</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--red)">${nok}</div><div class="kpi-label">Défavorables</div></div>`;
+    <div class="kpi"><div class="kpi-val" style="color:var(--red)">${nok}</div><div class="kpi-label">Défavorables</div></div>
+  `;
   const container=document.getElementById('historyContent');
-  if(!data.length){
+  if(data.length===0){
     container.innerHTML=`<div class="history-empty">
       <div class="es-icon">${all.length===0?'📋':'🔍'}</div>
-      <h3>${all.length===0?'Aucune analyse pour l\'instant':'Aucun résultat'}</h3>
-      <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement.':'Essayez un autre filtre.'}</p>
-      ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:16px auto 0;display:flex;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
+      <h3>${all.length===0?'Aucune analyse pour l\'instant':'Aucun résultat pour ce filtre'}</h3>
+      <p>${all.length===0?'Vos analyses apparaîtront ici automatiquement après chaque dossier traité.':'Essayez un autre filtre.'}</p>
+      ${all.length===0?`<button class="btn-main" style="max-width:220px;margin:0 auto;" onclick="showPage('tool')">Analyser un dossier</button>`:''}
     </div>`;return;
   }
   const vmap={FAVORABLE:{cls:'g',label:'Favorable',icon:'✅'},FAVORABLE_RESERVE:{cls:'o',label:'Avec réserves',icon:'⚠️'},DEFAVORABLE:{cls:'r',label:'Défavorable',icon:'❌'}};
-  container.innerHTML=`<div class="history-table">
-    <div class="history-table-head"><span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span></div>
-    ${data.map(e=>{
-      const v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
-      const sc=e.score>=70?'g':e.score>=45?'o':'r';
-      const ec=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
-      return `<div class="history-row">
-        <div class="hr-name">${e.prenom} ${e.nom}</div>
-        <div class="hr-prop">${e.type} · ${parseInt(e.loyer).toLocaleString('fr-FR')}€/mois${e.adresse?' · '+e.adresse:''}</div>
-        <div class="hr-score ${sc}">${e.score}</div>
-        <div class="hr-effort met-val ${ec}">${e.taux_effort}%</div>
-        <div><span class="verdict-badge ${v.cls}">${v.icon} ${v.label}</span></div>
-        <div class="hr-date">${e.date}</div>
-        <div><button class="hr-del" onclick="deleteFromHistory(${e.id})" title="Supprimer">🗑️</button></div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  container.innerHTML=`
+    <div class="history-table">
+      <div class="history-table-head"><span>Candidat</span><span>Bien</span><span>Score</span><span>Taux effort</span><span>Verdict</span><span>Date</span><span></span></div>
+      ${data.map(e=>{
+        const v=vmap[e.verdict]||vmap['FAVORABLE_RESERVE'];
+        const scoreCls=e.score>=70?'g':e.score>=45?'o':'r';
+        const effortCls=parseInt(e.taux_effort)<=33?'g':parseInt(e.taux_effort)<=40?'o':'r';
+        return `<div class="history-row">
+          <div class="hr-name">${e.prenom} ${e.nom}</div>
+          <div class="hr-prop">${e.type} · ${parseInt(e.loyer).toLocaleString('fr-FR')}€/mois${e.adresse?' · '+e.adresse:''}</div>
+          <div class="hr-score ${scoreCls}">${e.score}</div>
+          <div class="hr-effort met-val ${effortCls}">${e.taux_effort}%</div>
+          <div><span class="verdict-badge ${v.cls}">${v.icon} ${v.label}</span></div>
+          <div class="hr-date">${e.date}</div>
+          <div><button class="hr-del" onclick="deleteFromHistory(${e.id})" title="Supprimer">🗑️</button></div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
-// ══ CRÉDITS ══
+// ── CREDITS ──
 function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
 function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
+
 function updateCreditsUI(){
   const r=getRemaining(),u=getUsed();
   const badge=document.getElementById('creditsBadge');
@@ -1178,26 +934,64 @@ function updateCreditsUI(){
   const banner=document.getElementById('trialBanner');
   text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
   badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
-  banner.className='trial-banner'+(r===0?' danger':r<=2?' warn':'');
-  if(r===0){title.textContent='Analyses gratuites épuisées';}
-  else if(r<=2){title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;}
-  else{title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;}
+  if(r===0){
+    banner.style.background='var(--red-light)';
+    banner.style.borderColor='#f5c6c2';
+    title.textContent='Analyses gratuites épuisées';
+    title.style.color='var(--red)';
+  } else if(r<=2){
+    banner.style.background='#fff8e1';
+    banner.style.borderColor='#ffe082';
+    title.textContent=`Plus que ${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
+    title.style.color='#b45309';
+  } else {
+    title.textContent=`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''} restante${r>1?'s':''}`;
+    title.style.color='';
+  }
   dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
 }
+
 function checkCredits(){
-  if(getRemaining()===0){document.getElementById('upgradeModal').classList.add('show');return false;}
+  if(getRemaining()===0){
+    document.getElementById('upgradeModal').classList.add('show');
+    return false;
+  }
   return true;
 }
+
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
-function resetCredits(){
-  if(confirm('Réinitialiser le compteur d\'analyses gratuites ?')){
-    try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
-    updateCreditsUI();closeModal('upgradeModal');
-  }
+document.getElementById('reseauModal').addEventListener('click',function(e){if(e.target===this)closeModal('reseauModal');});
+
+// ── RESEAU CONTACT ──
+function openReseauContact(){
+  closeModal('upgradeModal');
+  document.getElementById('reseauModal').classList.add('show');
+}
+function sendReseauContact(){
+  const nom=document.getElementById('reseauNom').value.trim();
+  const agence=document.getElementById('reseauAgence').value.trim();
+  const email=document.getElementById('reseauEmail').value.trim();
+  const msg=document.getElementById('reseauMsg').value.trim();
+  if(!email){alert('Veuillez renseigner votre email.');return;}
+  const subject=encodeURIComponent('Demande devis Lokify Réseau — '+agence);
+  const body=encodeURIComponent(`Nom: ${nom}\nAgence/Réseau: ${agence}\nEmail: ${email}\n\n${msg}`);
+  window.location.href=`mailto:lokify.immo33@gmail.com?subject=${subject}&body=${body}`;
+  closeModal('reseauModal');
 }
 
-// ══ PIÈCES ══
+// ── WAITLIST ──
+function submitWaitlist(){
+  const email=document.getElementById('waitlistEmail').value.trim();
+  if(!email||!email.includes('@')){alert('Veuillez renseigner un email valide.');return;}
+  const subject=encodeURIComponent('Inscription waitlist Lokify Pro');
+  const body=encodeURIComponent(`Bonjour,\n\nJe souhaite rejoindre la waitlist Lokify Pro.\n\nEmail: ${email}\n\nMerci !`);
+  window.location.href=`mailto:lokify.immo33@gmail.com?subject=${subject}&body=${body}`;
+  document.getElementById('waitlistNote').textContent='✅ Merci ! Nous vous contacterons très bientôt.';
+  document.getElementById('waitlistEmail').value='';
+}
+
+// ── PIECES ──
 function togglePiece(el){
   el.classList.toggle('checked');
   el.querySelector('.pt-box').textContent=el.classList.contains('checked')?'✓':'';
@@ -1206,11 +1000,12 @@ function togglePiece(el){
 }
 function getSelectedPieces(){return[...document.querySelectorAll('.piece-toggle.checked')].map(el=>el.dataset.piece);}
 
-// ══ GARANT ══
+// ── GARANT ──
 let garantFiles=[];
 function toggleGarant(){
-  document.getElementById('garantToggle').classList.toggle('open');
-  document.getElementById('garantForm').classList.toggle('show');
+  const t=document.getElementById('garantToggle');
+  const f=document.getElementById('garantForm');
+  t.classList.toggle('open');f.classList.toggle('show');
 }
 function handleGarantFiles(list){[...list].forEach(f=>{if(!garantFiles.find(x=>x.name===f.name))garantFiles.push(f);});renderGarantFiles();}
 function renderGarantFiles(){
@@ -1221,7 +1016,7 @@ function renderGarantFiles(){
 }
 function delGarantFile(i){garantFiles.splice(i,1);renderGarantFiles();}
 
-// ══ FICHIERS ══
+// ── FILES ──
 let files=[];
 const upZone=document.getElementById('upZone');
 upZone.addEventListener('dragover',e=>{e.preventDefault();upZone.classList.add('over');});
@@ -1244,15 +1039,16 @@ function fileToBase64(file){
   });
 }
 
-// ══ NAVIGATION ══
+// ── UI ──
 function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(el=>el.classList.remove('active'));
-  const pmap={landing:'pageLanding',tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
-  const nmap={landing:'navLanding',tool:'navTool',history:'navHistory',pricing:'navPricing'};
-  document.getElementById(pmap[p]).classList.add('active');
-  document.getElementById(nmap[p]).classList.add('active');
+  const pageMap={tool:'pageTool',history:'pageHistory',pricing:'pagePricing'};
+  const navMap={tool:'navTool',history:'navHistory',pricing:'navPricing'};
+  document.getElementById(pageMap[p]).classList.add('active');
+  document.getElementById(navMap[p]).classList.add('active');
   if(p==='history')renderHistory();
+  if(p==='tool')syncKpisFromHistory();
   window.scrollTo(0,0);
 }
 function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
@@ -1261,180 +1057,45 @@ function copyLink(){
   navigator.clipboard.writeText('https://lokify-immo.netlify.app').then(()=>{
     const btn=document.getElementById('copyBtn');
     btn.textContent='✓ Copié !';
-    setTimeout(()=>btn.textContent='🔗 Copier le lien',2000);
+    setTimeout(()=>btn.textContent='🔗 Copier',2000);
   });
 }
 
-// ══ NOTES INTERNES ══
-let currentCandidatKey='';
-function saveNotes(){
-  const notes=document.getElementById('notesTextarea').value;
-  if(!currentCandidatKey)return;
-  try{
-    const allNotes=JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');
-    allNotes[currentCandidatKey]=notes;
-    localStorage.setItem(NOTES_KEY,JSON.stringify(allNotes));
-    const saved=document.getElementById('notesSaved');
-    saved.classList.add('show');
-    setTimeout(()=>saved.classList.remove('show'),2000);
-    // Mettre à jour dans l'historique aussi
-    const h=getHistory();
-    const idx=h.findIndex(e=>e.id===currentCandidatKey||`${e.prenom}_${e.nom}`===currentCandidatKey);
-    if(idx>=0){h[idx].notes=notes;saveHistory(h);}
-  }catch(e){}
-}
-function loadNotes(key){
-  try{
-    const allNotes=JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');
-    document.getElementById('notesTextarea').value=allNotes[key]||'';
-  }catch(e){document.getElementById('notesTextarea').value='';}
-}
-
-// ══ MAIL CANDIDAT (mailto pré-rempli) ══
+// ── PDF ──
 let lastResult=null,lastMeta=null;
-function sendMailCandidat(){
-  if(!lastResult||!lastMeta)return;
-  const {prenom,nom,email,loyer,type,adresse}=lastMeta;
-  const r=lastResult;
-  const vmap={FAVORABLE:'✅ Dossier favorable',FAVORABLE_RESERVE:'⚠️ Favorable avec réserves',DEFAVORABLE:'❌ Dossier défavorable'};
-  const verdict=vmap[r.verdict]||'Analyse complète';
-  const effortTxt=parseInt(r.taux_effort)<=33?'dans les normes (≤33%)':parseInt(r.taux_effort)<=40?'légèrement élevé':'au-dessus du seuil recommandé';
-
-  const subject=encodeURIComponent(`Votre dossier locataire — ${type} ${adresse?'à '+adresse:''}`);
-  const body=encodeURIComponent(
-`Bonjour ${prenom},
-
-Nous avons bien reçu et analysé votre dossier de candidature pour le ${type}${adresse?' situé au '+adresse:''}.
-
-─── RÉSULTAT DE L'ANALYSE ───
-
-Score de solvabilité : ${r.score}/100
-Verdict : ${verdict}
-
-Revenus nets : ${r.revenus_nets}
-Taux d'effort : ${r.taux_effort}% (${effortTxt})
-Contrat : ${r.type_contrat}
-Ancienneté : ${r.anciennete}
-
-─── RÉSUMÉ ───
-
-${r.resume}
-
-─── PROCHAINES ÉTAPES ───
-
-${r.verdict==='FAVORABLE'
-  ? 'Votre dossier est solide. Nous reviendrons vers vous très prochainement pour la suite de la procédure.'
-  : r.verdict==='FAVORABLE_RESERVE'
-  ? 'Votre dossier présente quelques points à consolider. Nous étudions votre candidature et reviendrons vers vous prochainement.'
-  : 'Votre dossier ne répond pas aux critères requis pour ce bien. Nous vous remercions de votre candidature.'
-}
-
-Cordialement,
-L'équipe Lokify
-
----
-Analyse réalisée par Lokify — lokify-immo.netlify.app
-Propulsé par Claude / Anthropic`);
-
-  const mailto=email?`mailto:${email}?subject=${subject}&body=${body}`:`mailto:?subject=${subject}&body=${body}`;
-  window.location.href=mailto;
-}
-
-// ══ LIEN DE PARTAGE ══
-function partagerDossier(){
-  if(!lastResult||!lastMeta)return;
-  const {prenom,nom,loyer,type,adresse}=lastMeta;
-  const r=lastResult;
-  const vmap={FAVORABLE:'Favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Défavorable'};
-
-  // Créer un résumé partageable dans le presse-papier
-  const texte=`📋 DOSSIER LOKIFY — ${prenom} ${nom}
-
-🏠 ${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois
-🎯 Score : ${r.score}/100
-💰 Revenus : ${r.revenus_nets}
-📊 Taux d'effort : ${r.taux_effort}%
-📝 Contrat : ${r.type_contrat}
-📌 Verdict : ${vmap[r.verdict]||'—'}
-
-${r.resume}
-
-Analysé par Lokify — lokify-immo.netlify.app`;
-
-  if(navigator.share){
-    navigator.share({title:`Dossier ${prenom} ${nom} — Lokify`,text:texte,url:'https://lokify-immo.netlify.app'});
-  } else {
-    navigator.clipboard.writeText(texte).then(()=>{
-      const btn=document.querySelector('.btn-partager');
-      const orig=btn.innerHTML;
-      btn.innerHTML='✓ Récapitulatif copié dans le presse-papier !';
-      btn.style.background='var(--green)';btn.style.color='#fff';
-      setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';btn.style.color='';},2500);
-    });
-  }
-}
-
-// ══ COMPARAISON ══
-let compareSlots=[];
-function addToCompare(entry){
-  if(compareSlots.length>=2)compareSlots.shift();
-  compareSlots.push(entry);
-  renderCompare();
-}
-function clearCompare(){compareSlots=[];renderCompare();}
-function renderCompare(){
-  const banner=document.getElementById('compareBanner');
-  const grid=document.getElementById('compareGrid');
-  if(compareSlots.length===0){banner.classList.remove('show');return;}
-  banner.classList.add('show');
-  grid.innerHTML=compareSlots.map(e=>{
-    const sc=e.score>=70?'g':e.score>=45?'o':'r';
-    return `<div class="compare-card">
-      <div class="compare-name">${e.prenom} ${e.nom}</div>
-      <div class="compare-score ${sc}">${e.score}/100</div>
-      <div class="compare-detail">💰 ${e.revenus_nets} · 📊 ${e.taux_effort}% effort</div>
-      <div class="compare-detail">${e.type_contrat} · ${e.anciennete}</div>
-    </div>`;
-  }).join('');
-  if(compareSlots.length===2){
-    const winner=compareSlots[0].score>=compareSlots[1].score?compareSlots[0]:compareSlots[1];
-    grid.innerHTML+=`<div style="grid-column:1/-1;text-align:center;font-size:0.75rem;font-weight:600;color:var(--green);padding:8px 0;">⭐ Meilleur dossier : ${winner.prenom} ${winner.nom} (${winner.score}/100)</div>`;
-  }
-}
-
-// ══ PDF ══
 function downloadPDF(){
   if(!lastResult||!lastMeta)return;
   const {prenom,nom,loyer,type,adresse}=lastMeta;
   const r=lastResult;
   const tags={ok:'Présente',partial:'Incomplète',missing:'Manquante'};
   const vmap={FAVORABLE:'Dossier favorable',FAVORABLE_RESERVE:'Favorable avec réserves',DEFAVORABLE:'Dossier défavorable'};
-  const notes=document.getElementById('notesTextarea').value;
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lokify — ${prenom} ${nom}</title>
-<style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}
-h1{font-size:1.5rem;margin-bottom:3px;}h2{font-size:0.95rem;color:#6b7280;font-weight:normal;margin-bottom:20px;}
-.score{display:inline-block;width:56px;height:56px;border-radius:50%;line-height:56px;text-align:center;font-size:1.3rem;font-weight:800;float:right;margin-top:-48px;}
-.g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}
-table{width:100%;border-collapse:collapse;margin:14px 0;}td{padding:8px 11px;border:1px solid #e0dff8;font-size:0.83rem;}td:first-child{font-weight:600;background:#f5f5ff;width:40%;}
-.verdict{padding:13px;border-radius:8px;margin:14px 0;font-size:0.82rem;}.notes-box{background:#f9f9ff;border:1px solid #e0dff8;border-radius:8px;padding:13px;margin:14px 0;font-size:0.82rem;line-height:1.7;}
-.footer{margin-top:36px;font-size:0.68rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:10px;}</style></head><body>
-<h1>${prenom} ${nom}</h1>
-<h2>${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois</h2>
-<div class="score ${r.score>=70?'g':r.score>=45?'o':'r'}">${r.score}</div>
-<h3>Indicateurs financiers</h3>
-<table><tr><td>Revenus nets réels</td><td>${r.revenus_nets}</td></tr>
-<tr><td>Taux d'effort</td><td>${r.taux_effort}%</td></tr>
-<tr><td>Type de contrat</td><td>${r.type_contrat}</td></tr>
-<tr><td>Ancienneté</td><td>${r.anciennete}</td></tr>
-${r.garant_revenus?`<tr><td>Revenus garant</td><td>${r.garant_revenus}</td></tr><tr><td>Revenus combinés</td><td>${r.revenus_combines}</td></tr>`:''}
-</table>
-<h3>Pièces du dossier</h3>
-<table>${r.pieces.map(p=>`<tr><td>${p.nom}</td><td>${tags[p.statut]}</td></tr>`).join('')}</table>
-<h3>Résumé du profil</h3><p style="font-size:0.83rem;line-height:1.7;">${r.resume}</p>
-<div class="verdict ${r.score>=70?'g':r.score>=45?'o':'r'}"><strong>${vmap[r.verdict]||'Analyse'}</strong><br/>${r.verdict_detail}</div>
-${notes?`<h3>Notes internes</h3><div class="notes-box">${notes.replace(/\n/g,'<br/>')}</div>`:''}
-<div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app · Propulsé par Claude / Anthropic<br/>Ce rapport est un outil d'aide à la décision. La décision finale appartient à l'agence.</div>
-</body></html>`;
+  <style>body{font-family:Arial,sans-serif;color:#1e1b4b;padding:40px;max-width:700px;margin:0 auto;}
+  h1{font-size:1.6rem;margin-bottom:4px;}h2{font-size:1rem;color:#6b7280;font-weight:normal;margin-bottom:24px;}
+  .score{display:inline-block;width:60px;height:60px;border-radius:50%;line-height:60px;text-align:center;font-size:1.4rem;font-weight:800;float:right;margin-top:-50px;}
+  .g{background:#e8f5ee;color:#2e7d52;border:3px solid #2e7d52;}.o{background:#fef3dc;color:#c17d11;border:3px solid #c17d11;}.r{background:#fdecea;color:#c0392b;border:3px solid #c0392b;}
+  table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #e0dff8;font-size:0.85rem;}
+  td:first-child{font-weight:600;background:#f5f5ff;width:40%;}
+  .verdict{padding:14px;border-radius:8px;margin:16px 0;font-size:0.85rem;}
+  .footer{margin-top:40px;font-size:0.7rem;color:#9ca3af;border-top:1px solid #e0dff8;padding-top:12px;}
+  </style></head><body>
+  <h1>${prenom} ${nom}</h1>
+  <h2>${type.charAt(0).toUpperCase()+type.slice(1)}${adresse?' · '+adresse:''} · ${parseInt(loyer).toLocaleString('fr-FR')}€/mois</h2>
+  <div class="score ${r.score>=70?'g':r.score>=45?'o':'r'}">${r.score}</div>
+  <h3>Indicateurs financiers</h3>
+  <table><tr><td>Revenus nets réels</td><td>${r.revenus_nets}</td></tr>
+  <tr><td>Taux d'effort</td><td>${r.taux_effort}%</td></tr>
+  <tr><td>Type de contrat</td><td>${r.type_contrat}</td></tr>
+  <tr><td>Ancienneté</td><td>${r.anciennete}</td></tr>
+  ${r.garant_revenus?`<tr><td>Revenus garant</td><td>${r.garant_revenus}</td></tr><tr><td>Revenus combinés</td><td>${r.revenus_combines}</td></tr>`:''}
+  </table>
+  <h3>Pièces du dossier</h3>
+  <table>${r.pieces.map(p=>`<tr><td>${p.nom}</td><td>${tags[p.statut]}</td></tr>`).join('')}</table>
+  <h3>Résumé du profil</h3><p style="font-size:0.85rem;line-height:1.7;">${r.resume}</p>
+  <div class="verdict ${r.score>=70?'g':r.score>=45?'o':'r'} verdict"><strong>${vmap[r.verdict]||'Analyse complète'}</strong><br/>${r.verdict_detail}</div>
+  <div class="footer">Rapport généré par Lokify · lokify-immo.netlify.app · Propulsé par Claude / Anthropic<br/>
+  Ce rapport est un outil d'aide à la décision. La décision finale appartient à l'agence.</div>
+  </body></html>`;
   const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1442,19 +1103,18 @@ ${notes?`<h3>Notes internes</h3><div class="notes-box">${notes.replace(/\n/g,'<b
   URL.revokeObjectURL(url);
 }
 
-// ══ ANALYSE ══
+// ── ANALYZE ──
 const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
-let kTotal=0,kOk=0,kRes=0,kNok=0;
 
 async function analyze(){
   if(!checkCredits())return;
   const prenom=document.getElementById('fPrenom').value.trim();
   const nom=document.getElementById('fNom').value.trim();
-  const email=document.getElementById('fEmail').value.trim();
   const loyer=document.getElementById('fLoyer').value;
   const type=document.getElementById('fType').value;
   const adresse=document.getElementById('fAdresse').value.trim();
-  document.getElementById('errBox').classList.remove('show');
+  const errBox=document.getElementById('errBox');
+  errBox.classList.remove('show');
   if(!prenom||!nom){showErr('Veuillez renseigner le prénom et le nom.');return;}
   if(!loyer||loyer<=0){showErr('Veuillez renseigner le montant du loyer.');return;}
 
@@ -1466,7 +1126,7 @@ async function analyze(){
   const selectedPieces=getSelectedPieces();
 
   document.getElementById('emptyCard').style.display='none';
-  document.getElementById('resultCard').style.display='none';
+  document.getElementById('resultCard').classList.remove('show');
   document.getElementById('loaderCard').style.display='block';
   document.getElementById('btnAnalyze').disabled=true;
 
@@ -1493,7 +1153,7 @@ async function analyze(){
     msgContent.push({type:'text',text:`Analyse ce dossier de location. Candidat: ${prenom} ${nom}. Loyer demandé: ${loyer}€/mois. Bien: ${type} à ${adresse}.${garantInfo}${piecesInfo}
 
 Lis attentivement tous les documents et extrais les vraies données. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après:
-{"score":85,"revenus_nets":"2 800 €/mois","taux_effort":32,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"6 000 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE","verdict_detail":"Explication détaillée.","donnees_lues":true}`});
+{"score":85,"revenus_nets":"1 828 €/mois","taux_effort":49,"type_contrat":"CDI","anciennete":"3 ans","garant_revenus":${hasGarant?'"3 200 €/mois"':'null'},"revenus_combines":${hasGarant?'"5 028 €/mois"':'null'},"pieces":[{"nom":"Fiche de paie","statut":"ok"}],"resume":"Résumé du profil.","verdict":"FAVORABLE_RESERVE","verdict_detail":"Explication.","donnees_lues":true}`});
 
     const resp=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1500,messages:[{role:'user',content:msgContent}]})});
@@ -1509,36 +1169,17 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
     incrementUsed();
     updateCreditsUI();
     lastResult=result;
-    lastMeta={prenom,nom,email,loyer,type,adresse};
-    currentCandidatKey=`${prenom}_${nom}_${Date.now()}`;
+    lastMeta={prenom,nom,loyer,type,adresse};
 
-    addToHistory({prenom,nom,loyer,type,adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,anciennete:result.anciennete,verdict:result.verdict});
-
-    // Ajouter à la comparaison
-    addToCompare({prenom,nom,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,anciennete:result.anciennete});
+    addToHistory({prenom,nom,loyer,type,adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
+    syncKpisFromHistory();
 
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('btnAnalyze').disabled=false;
-    showResult(result,prenom,nom,loyer,type,adresse,hasGarant,email);
+    showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
 
-    kTotal++;
-    if(result.verdict==='FAVORABLE')kOk++;
-    else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
-    else kNok++;
-    document.getElementById('kpiTotal').textContent=kTotal;
-    document.getElementById('kpiOk').textContent=kOk;
-    document.getElementById('kpiRes').textContent=kRes;
-    document.getElementById('kpiNok').textContent=kNok;
-
-    // Bouton mail candidat : afficher/masquer selon email renseigné
-    const btnMail=document.getElementById('btnMailCandidat');
-    if(email){btnMail.innerHTML=`✉️ Envoyer le récapitulatif à ${email}`;btnMail.style.display='flex';}
-    else{btnMail.innerHTML='✉️ Envoyer le récapitulatif au candidat';btnMail.style.display='flex';}
-
-    if(getRemaining()===0)setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);
-    if(result.verdict==='FAVORABLE')setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);
-
-    loadNotes(currentCandidatKey);
+    if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
+    if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
 
   }catch(e){
     clearInterval(iv);
@@ -1549,12 +1190,11 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
   }
 }
 
-function showResult(r,prenom,nom,loyer,type,adresse,hasGarant,email){
+function showResult(r,prenom,nom,loyer,type,adresse,hasGarant){
   document.getElementById('rName').textContent=prenom+' '+nom;
   document.getElementById('rProp').textContent=type.charAt(0).toUpperCase()+type.slice(1)+(adresse?' · '+adresse:'')+' · '+parseInt(loyer).toLocaleString('fr-FR')+'€/mois';
-  document.getElementById('sourceTag').innerHTML=r.donnees_lues
-    ?`<div class="source-tag">✓ Données lues depuis les documents</div>`
-    :`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
+  const srcTag=document.getElementById('sourceTag');
+  srcTag.innerHTML=r.donnees_lues?`<div class="source-tag">✓ Données lues depuis les documents</div>`:`<div class="source-tag" style="background:#fff8e1;border-color:#ffe082;color:#b45309;">⚡ Simulation — aucun document fourni</div>`;
   const ring=document.getElementById('scoreRing');
   ring.textContent=r.score;
   ring.className='score-ring '+(r.score>=70?'g':r.score>=45?'o':'r');
@@ -1564,7 +1204,7 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant,email){
   document.getElementById('mEffort').textContent=r.taux_effort+'%';
   document.getElementById('mEffort').className='met-val '+ecls;
   document.getElementById('mContrat').textContent=r.type_contrat;
-  document.getElementById('mContrat').className='met-val '+(['CDI','Fonctionnaire'].includes(r.type_contrat)?'g':r.type_contrat==='CDD'?'o':'');
+  document.getElementById('mContrat').className='met-val '+(r.type_contrat==='CDI'||r.type_contrat==='Fonctionnaire'?'g':r.type_contrat==='CDD'?'o':'');
   document.getElementById('mAnc').textContent=r.anciennete;
   const fill=document.getElementById('effortFill');
   setTimeout(()=>{fill.style.width=Math.min(e,100)+'%';fill.style.background=e<=33?'var(--green)':e<=40?'var(--orange)':'var(--red)';},100);
@@ -1580,32 +1220,30 @@ function showResult(r,prenom,nom,loyer,type,adresse,hasGarant,email){
   document.getElementById('piecesList').innerHTML=r.pieces.map(p=>`
     <div class="piece-row"><div class="pdot ${p.statut}"></div><div class="pname">${p.nom}</div><div class="ptag ${p.statut}">${tags[p.statut]}</div></div>`).join('');
   document.getElementById('summaryBox').innerHTML=r.resume;
-
   const vmap={FAVORABLE:{cls:'g',icon:'✅',lbl:'Dossier favorable'},FAVORABLE_RESERVE:{cls:'o',icon:'⚠️',lbl:'Favorable avec réserves'},DEFAVORABLE:{cls:'r',icon:'❌',lbl:'Dossier défavorable'}};
   const v=vmap[r.verdict]||vmap['FAVORABLE_RESERVE'];
   document.getElementById('verdictBox').className='verdict '+v.cls;
   document.getElementById('vIcon').textContent=v.icon;
   document.getElementById('vTxt').innerHTML=`<strong>${v.lbl}</strong>${r.verdict_detail}`;
-
-  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').classList.add('show');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function resetForm(){
   files=[];garantFiles=[];renderFiles();renderGarantFiles();
-  ['fPrenom','fNom','fEmail','fLoyer','fAdresse','gPrenom','gNom','gRevenus'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('resultCard').style.display='none';
+  ['fPrenom','fNom','fLoyer','fAdresse','gPrenom','gNom','gRevenus'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('resultCard').classList.remove('show');
   document.getElementById('emptyCard').style.display='block';
   document.getElementById('errBox').classList.remove('show');
   document.getElementById('garantToggle').classList.remove('open');
   document.getElementById('garantForm').classList.remove('show');
   document.getElementById('sharePopup').classList.remove('show');
-  document.getElementById('notesTextarea').value='';
-  lastResult=null;lastMeta=null;currentCandidatKey='';
+  lastResult=null;lastMeta=null;
 }
 
 // Init
 updateCreditsUI();
+syncKpisFromHistory();
 </script>
 </body>
 </html>
