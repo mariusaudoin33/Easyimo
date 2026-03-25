@@ -37,13 +37,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .credits-badge.low .credits-dot{background:#b45309;}
 .credits-badge.empty .credits-dot{background:var(--red);}
 
-/* BURGER */
-.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;border:none;background:none;}
-.burger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:all 0.3s;}
-.mobile-menu{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(245,245,255,0.98);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:199;padding:12px 16px;flex-direction:column;gap:4px;}
-.mobile-menu.open{display:flex;}
-.mobile-menu .nav-link{width:100%;text-align:left;padding:12px 16px;}
-
 .page{display:none;min-height:100vh;padding-top:68px;}
 .page.active{display:block;}
 
@@ -245,6 +238,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .mplan-btn.ghost:hover{border-color:var(--violet);color:var(--violet);}
 .modal-footer{text-align:center;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;}
 
+/* RESET CREDITS BTN */
+.reset-credits-wrap{text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-reset-credits{background:none;border:1.5px dashed var(--border);border-radius:9px;padding:8px 18px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.btn-reset-credits:hover{border-color:var(--violet);color:var(--violet);}
+
 /* SHARE POPUP */
 .share-popup-wrap{position:fixed;bottom:32px;right:32px;z-index:300;display:none;animation:slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);}
 .share-popup-wrap.show{display:block;}
@@ -325,7 +323,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .plan.featured .plan-features li{color:rgba(255,255,255,0.85);}
 .feat-check{width:18px;height:18px;background:var(--violet-light);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--violet);font-size:0.65rem;flex-shrink:0;margin-top:1px;}
 .plan.featured .feat-check{background:rgba(255,255,255,0.2);color:#fff;}
-.plan-btn{width:100%;padding:13px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;text-decoration:none;display:block;text-align:center;box-sizing:border-box;}
+.plan-btn{width:100%;padding:13px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
 .plan-btn.outline{background:transparent;color:var(--violet);border:1.5px solid var(--violet);}
 .plan-btn.outline:hover{background:var(--violet-light);}
 .plan-btn.solid{background:var(--white);color:var(--violet-dark);}
@@ -357,14 +355,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .faq-a{display:none;padding:0 20px 16px;font-size:0.82rem;color:var(--muted);line-height:1.8;}
 .faq-item.open .faq-a{display:block;}
 
-/* CONTACT RESEAU MODAL */
-.contact-modal{background:var(--white);border-radius:20px;max-width:480px;width:100%;padding:36px;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
-.contact-modal h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--black);margin-bottom:8px;}
-.contact-modal p{font-size:0.83rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
-.contact-modal .fi{margin-bottom:10px;}
-.contact-modal textarea{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;resize:vertical;min-height:80px;margin-bottom:10px;}
-.contact-modal textarea:focus{border-color:var(--violet);}
-
 footer{background:#1a1a2e;padding:20px 32px;text-align:center;border-top:2px solid #2d5a3d;}
 footer p{margin:0 0 4px 0;font-family:'Instrument Sans',sans-serif;font-size:13px;color:#c8a96e;}
 footer p a{color:#ffffff;text-decoration:none;font-weight:500;}
@@ -382,7 +372,6 @@ footer small{font-size:11px;color:#888;}
   .plan.featured{transform:none;}
   nav{padding:0 16px;}
   .nav-links{display:none;}
-  .burger{display:flex;}
   .tool-grid{grid-template-columns:1fr;}
   .kpi-row{grid-template-columns:1fr 1fr;}
   .guarantee{flex-direction:column;text-align:center;}
@@ -395,7 +384,6 @@ footer small{font-size:11px;color:#888;}
   .history-table-head,.history-row{grid-template-columns:1fr 1fr 0.6fr 0.6fr auto;}
   .hr-prop,.hr-effort{display:none;}
   .history-stats{grid-template-columns:1fr 1fr;}
-  .modal-plans{grid-template-columns:1fr;}
 }
 @media print{
   nav,.tool-header,.kpi-row,#leftCol,.res-actions,#sharePopup,.live-banner{display:none !important;}
@@ -421,18 +409,8 @@ footer small{font-size:11px;color:#888;}
       <span id="creditsText">5 analyses gratuites</span>
     </div>
     <button class="nav-cta" onclick="showPage('pricing')">Voir les offres</button>
-    <button class="burger" id="burgerBtn" onclick="toggleMobileMenu()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
   </div>
 </nav>
-
-<!-- MENU MOBILE -->
-<div class="mobile-menu" id="mobileMenu">
-  <button class="nav-link" onclick="showPage('tool');toggleMobileMenu()">🔍 Analyser un dossier</button>
-  <button class="nav-link" onclick="showPage('history');toggleMobileMenu()">📋 Historique</button>
-  <button class="nav-link" onclick="showPage('pricing');toggleMobileMenu()">💎 Tarifs</button>
-</div>
 
 <!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
@@ -460,7 +438,7 @@ footer small{font-size:11px;color:#888;}
         <div class="mplan featured">
           <div class="mplan-badge">⭐ Le plus populaire</div>
           <div class="mplan-name">Pro</div>
-          <div class="mplan-price">39€</div>
+          <div class="mplan-price">49€</div>
           <div class="mplan-period">par mois · sans engagement</div>
           <ul class="mplan-features">
             <li><span class="mcheck">✓</span><strong>Analyses illimitées</strong></li>
@@ -469,7 +447,7 @@ footer small{font-size:11px;color:#888;}
             <li><span class="mcheck">✓</span>Comparaison de candidats</li>
             <li><span class="mcheck">✓</span>Support prioritaire</li>
           </ul>
-          <a href="https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00" target="_blank" style="display:block;width:100%;padding:11px;border-radius:9px;background:#fff;color:#3730a3;font-family:'Instrument Sans',sans-serif;font-size:0.82rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">💳 S'abonner — 39€/mois</a>
+          <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:block;width:100%;padding:11px;border-radius:9px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.82rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
         </div>
         <div class="mplan">
           <div class="mplan-name">Réseau</div>
@@ -482,29 +460,19 @@ footer small{font-size:11px;color:#888;}
             <li><span class="mcheck">✓</span>Multi-utilisateurs</li>
             <li><span class="mcheck">✓</span>API disponible</li>
           </ul>
-          <button class="mplan-btn outline" onclick="openReseauContact()">📧 Demander un devis</button>
+          <button class="mplan-btn outline" onclick="alert('Contactez-nous pour un devis')">Nous contacter</button>
         </div>
       </div>
       <div class="modal-footer">
-        <span>🔒 Paiement sécurisé Stripe</span>
+        <span>🔒 Paiement sécurisé</span>
         <span>🛡️ 14 jours satisfait ou remboursé</span>
         <span>❌ Sans engagement</span>
       </div>
+      <!-- BOUTON RESET CREDITS -->
+      <div class="reset-credits-wrap">
+        <button class="btn-reset-credits" onclick="resetCredits()">🔄 Réinitialiser mes analyses gratuites</button>
+      </div>
     </div>
-  </div>
-</div>
-
-<!-- RESEAU CONTACT MODAL -->
-<div class="modal-overlay" id="reseauModal">
-  <div class="contact-modal">
-    <button class="modal-close" style="position:absolute;top:16px;right:16px;background:var(--bg);border:none;color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;" onclick="closeModal('reseauModal')">✕</button>
-    <h3>Plan Réseau — Devis personnalisé</h3>
-    <p>Pour les réseaux d'agences. Dites-nous en plus sur votre structure et nous vous répondons sous 24h.</p>
-    <input class="fi" id="reseauNom" placeholder="Votre nom" style="margin-bottom:10px;"/>
-    <input class="fi" id="reseauAgence" placeholder="Nom de votre réseau / agence" style="margin-bottom:10px;"/>
-    <input class="fi" id="reseauEmail" type="email" placeholder="votre@email.fr" style="margin-bottom:10px;"/>
-    <textarea id="reseauMsg" placeholder="Nombre d'agences, besoins spécifiques..."></textarea>
-    <button class="btn-main" onclick="sendReseauContact()">📧 Envoyer ma demande</button>
   </div>
 </div>
 
@@ -766,7 +734,7 @@ footer small{font-size:11px;color:#888;}
       <div class="plan featured">
         <div class="plan-badge">⭐ Le plus populaire</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price">39€</div>
+        <div class="plan-price">49€</div>
         <div class="plan-period">par mois · sans engagement</div>
         <div class="plan-desc">Pour les agences actives qui traitent des dossiers régulièrement.</div>
         <ul class="plan-features">
@@ -777,7 +745,7 @@ footer small{font-size:11px;color:#888;}
           <li><span class="feat-check">✓</span>Alerte dossiers incomplets</li>
           <li><span class="feat-check">✓</span>Support prioritaire</li>
         </ul>
-        <a href="https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00" target="_blank" class="plan-btn solid">💳 S'abonner — 39€/mois</a>
+        <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:block;width:100%;padding:13px;border-radius:10px;background:#fff;color:#3730a3;font-family:Instrument Sans,sans-serif;font-size:0.88rem;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;'>✉️ Nous contacter</a>
       </div>
       <div class="plan">
         <div class="plan-name">Réseau</div>
@@ -792,18 +760,18 @@ footer small{font-size:11px;color:#888;}
           <li><span class="feat-check">✓</span>API disponible</li>
           <li><span class="feat-check">✓</span>Onboarding personnalisé</li>
         </ul>
-        <button class="plan-btn outline" onclick="openReseauContact()">📧 Demander un devis</button>
+        <button class="plan-btn outline" onclick="alert('Contactez-nous pour un devis')">Nous contacter</button>
       </div>
     </div>
 
     <div class="waitlist-card">
       <h2>Rejoignez Lokify Pro en avant-première</h2>
-      <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité.</p>
+      <p>Analyses illimitées, rapport PDF, historique complet. Laissez votre email — on vous contacte en priorité dès l'ouverture.</p>
       <div class="waitlist-form">
         <input class="waitlist-input" type="email" id="waitlistEmail" placeholder="votre@agence.fr"/>
-        <button class="waitlist-btn" onclick="submitWaitlist()">✉️ Nous rejoindre</button>
+        <a href='mailto:lokify.immo33@gmail.com?subject=Abonnement%20Lokify%20Pro&body=Bonjour%2C%20je%20souhaite%20souscrire%20à%20Lokify%20Pro.' style='display:inline-block;background:var(--violet);color:#fff;border-radius:10px;padding:12px 20px;font-family:Instrument Sans,sans-serif;font-size:0.85rem;font-weight:700;text-decoration:none;white-space:nowrap;'>✉️ Nous contacter</a>
       </div>
-      <div class="waitlist-note" id="waitlistNote">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
+      <div class="waitlist-note">Déjà 47 agences en attente · Sans engagement · Réponse sous 24h</div>
     </div>
 
     <div class="guarantee">
@@ -829,27 +797,21 @@ footer small{font-size:11px;color:#888;}
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)"><span>Puis-je résilier à tout moment ?</span><span class="faq-icon">+</span></button>
-        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client Stripe en un clic. Votre accès reste actif jusqu'à la fin de la période payée.</div>
+        <div class="faq-a">Oui, sans conditions ni frais. Annulez depuis votre espace client en un clic. Votre accès reste actif jusqu'à la fin de la période payée.</div>
       </div>
     </div>
   </div>
   <footer>
     <p>📧 Contact : <a href="mailto:lokify.immo33@gmail.com">lokify.immo33@gmail.com</a></p>
-    <small>Lokify — Analyse de dossiers locataires par intelligence artificielle · © 2025 Lokify · Tous droits réservés · RGPD · Propulsé par Claude / Anthropic</small>
+    <small><span>Lokify</span> — Analyse de dossiers locataires par intelligence artificielle · © 2025 Lokify · Tous droits réservés · RGPD · Propulsé par Claude / Anthropic</small>
   </footer>
 </div>
 
 <script>
-const STRIPE_URL='https://buy.stripe.com/8x26oA80VbOa5VV47Y2kw00';
 const PROXY_URL='/.netlify/functions/analyze';
 const MAX_FREE=5;
 const STORAGE_KEY='lokify_analyses_used';
 const HISTORY_KEY='lokify_history';
-
-// ── BURGER MENU ──
-function toggleMobileMenu(){
-  document.getElementById('mobileMenu').classList.toggle('open');
-}
 
 // ── HISTORIQUE ──
 function getHistory(){
@@ -863,15 +825,6 @@ function addToHistory(entry){
 }
 function deleteFromHistory(id){const h=getHistory().filter(e=>e.id!==id);saveHistory(h);renderHistory();}
 function clearHistory(){if(confirm('Effacer tout l\'historique ?')){saveHistory([]);renderHistory();}}
-
-// ── KPIs depuis localStorage ──
-function syncKpisFromHistory(){
-  const h=getHistory();
-  document.getElementById('kpiTotal').textContent=h.length;
-  document.getElementById('kpiOk').textContent=h.filter(e=>e.verdict==='FAVORABLE').length;
-  document.getElementById('kpiRes').textContent=h.filter(e=>e.verdict==='FAVORABLE_RESERVE').length;
-  document.getElementById('kpiNok').textContent=h.filter(e=>e.verdict==='DEFAVORABLE').length;
-}
 
 let currentFilter='all';
 function filterHistory(f){
@@ -925,6 +878,7 @@ function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10
 function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
 function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
 
+// ✅ CORRECTIF : ne plus ouvrir la modale au chargement
 function updateCreditsUI(){
   const r=getRemaining(),u=getUsed();
   const badge=document.getElementById('creditsBadge');
@@ -951,6 +905,7 @@ function updateCreditsUI(){
   dots.innerHTML=Array.from({length:MAX_FREE},(_,i)=>`<div class="trial-dot${i<u?' used':''}"></div>`).join('');
 }
 
+// ✅ CORRECTIF : la modale ne s'ouvre QUE quand on clique sur Analyser
 function checkCredits(){
   if(getRemaining()===0){
     document.getElementById('upgradeModal').classList.add('show');
@@ -961,34 +916,14 @@ function checkCredits(){
 
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
-document.getElementById('reseauModal').addEventListener('click',function(e){if(e.target===this)closeModal('reseauModal');});
 
-// ── RESEAU CONTACT ──
-function openReseauContact(){
-  closeModal('upgradeModal');
-  document.getElementById('reseauModal').classList.add('show');
-}
-function sendReseauContact(){
-  const nom=document.getElementById('reseauNom').value.trim();
-  const agence=document.getElementById('reseauAgence').value.trim();
-  const email=document.getElementById('reseauEmail').value.trim();
-  const msg=document.getElementById('reseauMsg').value.trim();
-  if(!email){alert('Veuillez renseigner votre email.');return;}
-  const subject=encodeURIComponent('Demande devis Lokify Réseau — '+agence);
-  const body=encodeURIComponent(`Nom: ${nom}\nAgence/Réseau: ${agence}\nEmail: ${email}\n\n${msg}`);
-  window.location.href=`mailto:lokify.immo33@gmail.com?subject=${subject}&body=${body}`;
-  closeModal('reseauModal');
-}
-
-// ── WAITLIST ──
-function submitWaitlist(){
-  const email=document.getElementById('waitlistEmail').value.trim();
-  if(!email||!email.includes('@')){alert('Veuillez renseigner un email valide.');return;}
-  const subject=encodeURIComponent('Inscription waitlist Lokify Pro');
-  const body=encodeURIComponent(`Bonjour,\n\nJe souhaite rejoindre la waitlist Lokify Pro.\n\nEmail: ${email}\n\nMerci !`);
-  window.location.href=`mailto:lokify.immo33@gmail.com?subject=${subject}&body=${body}`;
-  document.getElementById('waitlistNote').textContent='✅ Merci ! Nous vous contacterons très bientôt.';
-  document.getElementById('waitlistEmail').value='';
+// ✅ NOUVEAU : bouton pour réinitialiser les crédits
+function resetCredits(){
+  if(confirm('Réinitialiser le compteur d\'analyses gratuites ? (5 nouvelles analyses disponibles)')){
+    try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
+    updateCreditsUI();
+    closeModal('upgradeModal');
+  }
 }
 
 // ── PIECES ──
@@ -1048,7 +983,6 @@ function showPage(p){
   document.getElementById(pageMap[p]).classList.add('active');
   document.getElementById(navMap[p]).classList.add('active');
   if(p==='history')renderHistory();
-  if(p==='tool')syncKpisFromHistory();
   window.scrollTo(0,0);
 }
 function toggleFaq(btn){btn.parentElement.classList.toggle('open');}
@@ -1105,6 +1039,7 @@ function downloadPDF(){
 
 // ── ANALYZE ──
 const loadSteps=['Lecture des documents PDF…','Extraction des données financières…','Analyse du salaire net…','Vérification des pièces justificatives…','Calcul du taux d\'effort…','Génération du rapport…'];
+let kTotal=0,kOk=0,kRes=0,kNok=0;
 
 async function analyze(){
   if(!checkCredits())return;
@@ -1172,12 +1107,21 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
     lastMeta={prenom,nom,loyer,type,adresse};
 
     addToHistory({prenom,nom,loyer,type,adresse,score:result.score,taux_effort:result.taux_effort,revenus_nets:result.revenus_nets,type_contrat:result.type_contrat,verdict:result.verdict});
-    syncKpisFromHistory();
 
     document.getElementById('loaderCard').style.display='none';
     document.getElementById('btnAnalyze').disabled=false;
     showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
 
+    kTotal++;
+    if(result.verdict==='FAVORABLE')kOk++;
+    else if(result.verdict==='FAVORABLE_RESERVE')kRes++;
+    else kNok++;
+    document.getElementById('kpiTotal').textContent=kTotal;
+    document.getElementById('kpiOk').textContent=kOk;
+    document.getElementById('kpiRes').textContent=kRes;
+    document.getElementById('kpiNok').textContent=kNok;
+
+    // ✅ CORRECTIF : modale s'affiche seulement APRÈS analyse si crédits épuisés
     if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
     if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
 
@@ -1241,9 +1185,8 @@ function resetForm(){
   lastResult=null;lastMeta=null;
 }
 
-// Init
+// Init — ✅ plus d'ouverture automatique de la modale
 updateCreditsUI();
-syncKpisFromHistory();
 </script>
 </body>
 </html>
