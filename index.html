@@ -23,7 +23,7 @@ body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-s
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(245,245,255,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(224,223,248,0.7);}
 .nav-logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--black);text-decoration:none;letter-spacing:-0.02em;}
-.logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);}
+.logo-badge{width:36px;height:36px;border-radius:10px;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:800;color:var(--violet);cursor:pointer;user-select:none;}
 .nav-links{display:flex;gap:8px;}
 .nav-link{font-size:0.875rem;font-weight:500;color:var(--muted);padding:8px 16px;border-radius:8px;border:none;background:none;cursor:pointer;transition:all 0.2s;}
 .nav-link:hover,.nav-link.active{background:var(--violet-light);color:var(--violet);}
@@ -33,9 +33,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .credits-badge{display:flex;align-items:center;gap:6px;background:var(--violet-light);border:1px solid var(--violet-mid);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;color:var(--violet-dark);cursor:pointer;transition:all 0.2s;}
 .credits-badge.low{background:#fff8e1;border-color:#ffe082;color:#b45309;}
 .credits-badge.empty{background:var(--red-light);border-color:#f5c6c2;color:var(--red);}
+.credits-badge.owner{background:var(--green-light);border-color:#a8d5bc;color:var(--green);}
 .credits-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);}
 .credits-badge.low .credits-dot{background:#b45309;}
 .credits-badge.empty .credits-dot{background:var(--red);}
+.credits-badge.owner .credits-dot{background:var(--green);}
 
 /* BURGER */
 .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;border:none;background:none;}
@@ -365,6 +367,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:68px;display:flex;ali
 .contact-modal textarea{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--white);outline:none;transition:border-color 0.2s;resize:vertical;min-height:80px;margin-bottom:10px;}
 .contact-modal textarea:focus{border-color:var(--violet);}
 
+/* OWNER MODAL */
+.owner-modal{background:var(--white);border-radius:16px;max-width:360px;width:100%;padding:28px;box-shadow:0 32px 80px rgba(79,70,229,0.25);animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
+.owner-modal h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--black);margin-bottom:6px;}
+.owner-modal p{font-size:0.8rem;color:var(--muted);margin-bottom:16px;}
+.owner-modal input{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Instrument Sans',sans-serif;font-size:0.9rem;color:var(--text);outline:none;margin-bottom:10px;transition:border-color 0.2s;}
+.owner-modal input:focus{border-color:var(--violet);}
+.owner-error{font-size:0.75rem;color:var(--red);margin-bottom:8px;display:none;}
+.owner-error.show{display:block;}
+
 footer{background:#1a1a2e;padding:20px 32px;text-align:center;border-top:2px solid #2d5a3d;}
 footer p{margin:0 0 4px 0;font-family:'Instrument Sans',sans-serif;font-size:13px;color:#c8a96e;}
 footer p a{color:#ffffff;text-decoration:none;font-weight:500;}
@@ -408,7 +419,7 @@ footer small{font-size:11px;color:#888;}
 
 <nav>
   <a class="nav-logo" href="#" onclick="showPage('tool');return false;">
-    <div class="logo-badge">LK</div>Lokify
+    <div class="logo-badge" id="logoBadge">LK</div>Lokify
   </a>
   <div class="nav-links">
     <button class="nav-link active" id="navTool" onclick="showPage('tool')">Analyser un dossier</button>
@@ -505,6 +516,18 @@ footer small{font-size:11px;color:#888;}
     <input class="fi" id="reseauEmail" type="email" placeholder="votre@email.fr" style="margin-bottom:10px;"/>
     <textarea id="reseauMsg" placeholder="Nombre d'agences, besoins spécifiques..."></textarea>
     <button class="btn-main" onclick="sendReseauContact()">📧 Envoyer ma demande</button>
+  </div>
+</div>
+
+<!-- OWNER MODAL (invisible pour les visiteurs) -->
+<div class="modal-overlay" id="ownerModal">
+  <div class="owner-modal">
+    <button style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;" onclick="closeModal('ownerModal')">✕</button>
+    <h3>🔐 Accès administrateur</h3>
+    <p>Entrez le code pour activer les analyses illimitées sur cet appareil.</p>
+    <input type="password" id="ownerInput" placeholder="Code secret…" onkeydown="if(event.key==='Enter')checkOwnerCode()"/>
+    <div class="owner-error" id="ownerError">Code incorrect. Réessayez.</div>
+    <button class="btn-main" onclick="checkOwnerCode()">Valider</button>
   </div>
 </div>
 
@@ -845,6 +868,47 @@ const PROXY_URL='/.netlify/functions/analyze';
 const MAX_FREE=5;
 const STORAGE_KEY='lokify_analyses_used';
 const HISTORY_KEY='lokify_history';
+const OWNER_KEY='lokify_owner_v1';
+const OWNER_CODE='marius33';
+
+// ── OWNER / SECRET ACCESS ──
+function isOwner(){
+  try{return localStorage.getItem(OWNER_KEY)==='true';}catch(e){return false;}
+}
+function setOwner(){
+  try{localStorage.setItem(OWNER_KEY,'true');}catch(e){}
+}
+
+// Logo badge: 5 clics rapides pour ouvrir la popup owner
+let logoClicks=0,logoTimer=null;
+document.getElementById('logoBadge').addEventListener('click',function(e){
+  e.preventDefault();e.stopPropagation();
+  if(isOwner())return; // déjà owner, rien à faire
+  logoClicks++;
+  if(logoTimer)clearTimeout(logoTimer);
+  logoTimer=setTimeout(()=>{logoClicks=0;},2000);
+  if(logoClicks>=5){
+    logoClicks=0;
+    document.getElementById('ownerInput').value='';
+    document.getElementById('ownerError').classList.remove('show');
+    document.getElementById('ownerModal').classList.add('show');
+    setTimeout(()=>document.getElementById('ownerInput').focus(),200);
+  }
+});
+
+function checkOwnerCode(){
+  const val=document.getElementById('ownerInput').value.trim();
+  if(val===OWNER_CODE){
+    setOwner();
+    closeModal('ownerModal');
+    updateCreditsUI();
+    alert('✅ Accès illimité activé sur cet appareil !');
+  } else {
+    document.getElementById('ownerError').classList.add('show');
+    document.getElementById('ownerInput').value='';
+    document.getElementById('ownerInput').focus();
+  }
+}
 
 // ── BURGER MENU ──
 function toggleMobileMenu(){
@@ -922,16 +986,36 @@ function renderHistory(){
 
 // ── CREDITS ──
 function getUsed(){try{return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);}catch(e){return 0;}}
-function incrementUsed(){try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}}
-function getRemaining(){return Math.max(0,MAX_FREE-getUsed());}
+function incrementUsed(){
+  if(isOwner())return; // owner : on n'incrémente pas
+  try{localStorage.setItem(STORAGE_KEY,getUsed()+1);}catch(e){}
+}
+function getRemaining(){
+  if(isOwner())return Infinity;
+  return Math.max(0,MAX_FREE-getUsed());
+}
 
 function updateCreditsUI(){
+  const owner=isOwner();
   const r=getRemaining(),u=getUsed();
   const badge=document.getElementById('creditsBadge');
   const text=document.getElementById('creditsText');
   const title=document.getElementById('trialTitle');
   const dots=document.getElementById('trialDots');
   const banner=document.getElementById('trialBanner');
+
+  if(owner){
+    badge.className='credits-badge owner';
+    badge.querySelector('.credits-dot').style.background='var(--green)';
+    text.textContent='Accès illimité';
+    banner.style.background='var(--green-light)';
+    banner.style.borderColor='#a8d5bc';
+    title.textContent='Analyses illimitées activées';
+    title.style.color='var(--green)';
+    dots.innerHTML='';
+    return;
+  }
+
   text.textContent=r===0?'Passer à Pro':`${r} analyse${r>1?'s':''} gratuite${r>1?'s':''}`;
   badge.className='credits-badge'+(r===0?' empty':r<=2?' low':'');
   if(r===0){
@@ -952,6 +1036,7 @@ function updateCreditsUI(){
 }
 
 function checkCredits(){
+  if(isOwner())return true;
   if(getRemaining()===0){
     document.getElementById('upgradeModal').classList.add('show');
     return false;
@@ -962,6 +1047,7 @@ function checkCredits(){
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.getElementById('upgradeModal').addEventListener('click',function(e){if(e.target===this)closeModal('upgradeModal');});
 document.getElementById('reseauModal').addEventListener('click',function(e){if(e.target===this)closeModal('reseauModal');});
+document.getElementById('ownerModal').addEventListener('click',function(e){if(e.target===this)closeModal('ownerModal');});
 
 // ── RESEAU CONTACT ──
 function openReseauContact(){
@@ -1178,7 +1264,7 @@ Lis attentivement tous les documents et extrais les vraies données. Réponds UN
     document.getElementById('btnAnalyze').disabled=false;
     showResult(result,prenom,nom,loyer,type,adresse,hasGarant);
 
-    if(getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
+    if(!isOwner()&&getRemaining()===0){setTimeout(()=>document.getElementById('upgradeModal').classList.add('show'),3000);}
     if(result.verdict==='FAVORABLE'){setTimeout(()=>document.getElementById('sharePopup').classList.add('show'),2000);}
 
   }catch(e){
